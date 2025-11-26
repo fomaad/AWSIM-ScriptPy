@@ -60,7 +60,7 @@ def object_to_point_arr(obj):
 
 def longitudinal_distance(A, B, euler_angles):
     """
-    distance AH, where H is the projection of H onto vector Ax and Ax has euler angles euler_angles
+    distance AH, where H is the projection of B onto vector Ax and Ax has euler angles euler_angles
     :param A:
     :param B:
     :param euler_angles:
@@ -73,7 +73,7 @@ def longitudinal_distance(A, B, euler_angles):
 
     # Projection scalar
     t = np.dot(B - A, d)
-    t = max(t, 0)
+    # t = max(t, 0)
     # Projection point H
     H = A + t * d
     return np.linalg.norm(H - A)

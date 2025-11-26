@@ -165,7 +165,8 @@ class ChangeLane(Action):
         # calculate waypoints
         lateral_dis = np.linalg.norm(front_center_point[:2] - projection)
         if current_speed < self.lateral_velocity:
-            client_node.get_logger().error(f'[ERROR] The lateral velocity is greater than the current speed. Ignore lane change.')
+            client_node.get_logger().error(f'[ERROR] The lateral velocity ({self.lateral_velocity}) '
+                                           f'is greater than the current speed ({current_speed}). Ignore lane change.')
             return
 
         long_speed = np.sqrt(current_speed ** 2 - self.lateral_velocity ** 2)

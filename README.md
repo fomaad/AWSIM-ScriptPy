@@ -5,7 +5,7 @@ This is the client library of AWSIM-ScriptPy, a flexible interface for scenario 
 The server interface is implemented in the extended [AWSIM-Labs](https://github.com/duongtd23/AWSIM-Labs) simulator.
 
 You may also find the following interesting:
-- [AW-Runtime-Monitor](https://github.com/dtanony/AW-Runtime-Monitor): A tool that can record and generate scenario execution traces for post-simulation analysis/verification.
+- [AW-Runtime-Monitor](https://github.com/duongtd23/AW-Runtime-Monitor): A tool that can record and generate scenario execution traces for post-simulation analysis/verification.
 - [AW-CheckerPy](https://github.com/duongtd23/AW-CheckerPy): An LTL-based property checker for verifying desired properties in LTL formulas on the generated execution traces.
 
 ### Usage

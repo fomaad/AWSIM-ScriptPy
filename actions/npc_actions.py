@@ -2,59 +2,8 @@ from core.action import Action
 import std_msgs, rclpy
 import json, time
 import utils
-from core.actor import NPCVehicle
+from core.npc_vehicle import NPCVehicle
 from core.client_ros_node import *
-
-class SpawnNPCVehicle(Action):
-    def __init__(self, position=None, orientation=None,
-                 pose_callback=None, condition=None):
-        """
-        Either {position, orientation} or pose_callback must be defined.
-        :param position: np array
-        :param orientation: np array
-        :param pose_callback: function that takes (actor, global_state) and returns (position, orientation)
-        :return:
-        """
-        super().__init__(condition=condition, one_shot=True)
-        self.position = position
-        self.orientation = orientation
-        self.pose_callback = pose_callback
-
-    def _do(self, actor:NPCVehicle, client_node, global_state):
-        pos = self.position
-        orient = self.orientation
-        if self.pose_callback is not None:
-            pos, orient = self.pose_callback(actor, global_state)
-        my_dict = {
-            "timestamp": client_node.get_clock().now().nanoseconds / 1e9,
-            "name": actor.actor_id,
-            "body_style": actor.body_style.value,
-            "position": utils.array_to_dict_pos(pos),
-            "orientation": utils.array_to_dict_orient(orient)
-        }
-
-        msg = std_msgs.msg.String()
-        msg.data = json.dumps(my_dict)
-        client_node.dynamic_npc_spawning_publisher.publish(msg)
-
-        # make sure the action was properly handled
-        req = DynamicControl.Request()
-        req.json_request = msg.data
-        retry = 0
-        while retry < 10:
-            future = client_node.dynamic_npc_spawning_client.call_async(req)
-            rclpy.spin_until_future_complete(client_node, future)
-            response = future.result()
-
-            if response.status.success:
-                client_node.get_logger().info(f"Spawned NPC vehicle {actor.actor_id}")
-                return
-            else:
-                # client_node.get_logger().warning(f"Spawning {actor.actor_id} was not processed successfully. "
-                #                                  f"Retrying... ({retry + 1}/10)")
-                time.sleep(client_node.timestep)
-                retry += 1
-        client_node.get_logger().error(f"Sent spawning {actor.actor_id} command, but failed to get response after 10 attempts.")
 
 class FollowLane(Action):
     def __init__(self, lane=None, condition=None, target_speed=None, acceleration=None):

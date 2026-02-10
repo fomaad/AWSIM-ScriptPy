@@ -1,6 +1,7 @@
 from core.client_ros_node import *
 from core.action import *
-from core.actor import *
+from core.ego_vehicle import *
+from core.npc_vehicle import *
 from actions.ego_actions import *
 from actions.npc_actions import *
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
@@ -29,23 +30,31 @@ class Scenario:
             "ads_internal_status": AdsInternalStatus.UNINITIALIZED.value,
             "ego_motion_state": MOTION_STATE_STOPPED,
         }
-        self.lock = False
 
     def set_client(self, client_node):
         self.client_node = client_node
         self.logger = client_node.get_logger()
 
     def run(self):
+        # initialize actors
+        for actor in self.actors:
+            if isinstance(actor, EgoVehicle):
+                actor.do_spawn(self.client_node)
+                actor.do_set_goal(self.client_node)
+                actor.do_set_speed_limit(self.client_node)
+
+            elif isinstance(actor, NPCVehicle):
+                actor.do_spawn(self.client_node, self.global_state)
+            
         while self.running:
             for actor in self.actors:
                 actor.tick(self.global_state, self.client_node)
+                if isinstance(actor, EgoVehicle):
+                    actor.do_set_speed_limit(self.client_node)
 
             self.update_global_state()
 
             time.sleep(self.fixed_delta_time)
-
-    def terminate(self):
-        self.running = False
 
     def update_global_state(self):
         ads_exec_state = self.client_node.query_execution_state()
@@ -64,6 +73,7 @@ class Scenario:
                 self.global_state["ads_internal_status"] == AdsInternalStatus.AUTONOMOUS_IN_PROGRESS.value:
             self.logger.info("Goal arrived")
             self.global_state["ads_internal_status"] = AdsInternalStatus.GOAL_ARRIVED.value
+            self.running = False
 
         kinematics_msg = self.client_node.query_groundtruth_kinematics()
         self.global_state["actor-kinematics"] = kinematic_msg_to_dict(kinematics_msg)

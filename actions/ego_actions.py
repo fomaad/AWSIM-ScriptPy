@@ -4,7 +4,8 @@ from core.action import Action
 import utils
 
 from geometry_msgs.msg import Pose, PoseWithCovariance, PoseWithCovarianceStamped
-from tier4_planning_msgs.msg import VelocityLimit
+# from tier4_planning_msgs.msg import VelocityLimit
+from autoware_internal_planning_msgs.msg import VelocityLimit
 
 class SpawnEgo(Action):
     def __init__(self, position, orientation, condition=None):

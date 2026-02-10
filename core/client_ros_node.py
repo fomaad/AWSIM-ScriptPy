@@ -11,7 +11,8 @@ from autoware_adapi_v1_msgs.srv import InitializeLocalization, ChangeOperationMo
 from autoware_adapi_v1_msgs.msg import RouteState
 from autoware_vehicle_msgs.msg import Engage
 import utils
-from tier4_planning_msgs.msg import VelocityLimit
+# from tier4_planning_msgs.msg import VelocityLimit
+from autoware_internal_planning_msgs.msg import VelocityLimit
 from aw_monitor.srv import *
 import aw_monitor.msg
 
@@ -67,7 +68,7 @@ class AdsInternalStatus(Enum):
 class ClientNode(Node):
     def __init__(self):
         super().__init__('awsimscript_client')
-        self.timestep = 0.1
+        self.timestep = 0.02
         self.ads_internal_status = AdsInternalStatus.UNINITIALIZED
         self.ego_motion_state = MOTION_STATE_STOPPED
         self.published_finish_signal = False
@@ -75,7 +76,7 @@ class ClientNode(Node):
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
             history=HistoryPolicy.KEEP_LAST,
-            depth=10
+            depth=1
         )
         # publishers
         self.awsim_scenario_publisher = self.create_publisher(
@@ -210,6 +211,10 @@ class ClientNode(Node):
         self.follow_waypoints_client = self.create_client(
             DynamicControl,
             '/dynamic_control/vehicle/follow_waypoints_srv',
+        )
+        self.set_target_speed_client = self.create_client(
+            DynamicControl,
+            '/dynamic_control/vehicle/target_speed_srv',
         )
 
     def send_request(self, file_path):

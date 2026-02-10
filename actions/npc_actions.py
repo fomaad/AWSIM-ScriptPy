@@ -26,6 +26,7 @@ class SpawnNPCVehicle(Action):
         if self.pose_callback is not None:
             pos, orient = self.pose_callback(actor, global_state)
         my_dict = {
+            "timestamp": client_node.get_clock().now().nanoseconds / 1e9,
             "name": actor.actor_id,
             "body_style": actor.body_style.value,
             "position": utils.array_to_dict_pos(pos),
@@ -36,7 +37,24 @@ class SpawnNPCVehicle(Action):
         msg.data = json.dumps(my_dict)
         client_node.dynamic_npc_spawning_publisher.publish(msg)
 
-        client_node.get_logger().info(f"Spawned NPC vehicle {actor.actor_id}")
+        # make sure the action was properly handled
+        req = DynamicControl.Request()
+        req.json_request = msg.data
+        retry = 0
+        while retry < 10:
+            future = client_node.dynamic_npc_spawning_client.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            response = future.result()
+
+            if response.status.success:
+                client_node.get_logger().info(f"Spawned NPC vehicle {actor.actor_id}")
+                return
+            else:
+                # client_node.get_logger().warning(f"Spawning {actor.actor_id} was not processed successfully. "
+                #                                  f"Retrying... ({retry + 1}/10)")
+                time.sleep(client_node.timestep)
+                retry += 1
+        client_node.get_logger().error(f"Sent spawning {actor.actor_id} command, but failed to get response after 10 attempts.")
 
 class FollowLane(Action):
     def __init__(self, lane=None, condition=None, target_speed=None, acceleration=None):
@@ -55,7 +73,9 @@ class FollowLane(Action):
     def _do(self, actor:NPCVehicle, client_node, global_state):
         is_speed_defined = self.target_speed is not None
         is_acceleration_defined = self.acceleration is not None
+        timestamp = client_node.get_clock().now().nanoseconds / 1e9
         my_dict = {
+            "timestamp": timestamp,
             "target": actor.actor_id,
             "lane": "" if self.lane is None else self.lane,
             "speed": self.target_speed if is_speed_defined else 0,
@@ -66,7 +86,26 @@ class FollowLane(Action):
         msg = std_msgs.msg.String()
         msg.data = json.dumps(my_dict)
         client_node.follow_lane_publisher.publish(msg)
-        client_node.get_logger().info(f"Sent follow lane command to {actor.actor_id} successfully.")
+
+        # make sure the action was properly handled
+        req = DynamicControl.Request()
+        req.json_request = msg.data
+        retry = 0
+        while retry < 10:
+            future = client_node.follow_lane_client.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            response = future.result()
+
+            if response.status.success:
+                client_node.get_logger().info(f"Follow lane was sent to {actor.actor_id} and processed successfully.")
+                return
+            else:
+                # client_node.get_logger().warning(f"Follow lane command sent to {actor.actor_id} was not processed successfully. "
+                                                #  f"Retrying... ({retry + 1}/10)")
+                time.sleep(client_node.timestep)
+                retry += 1
+    
+        client_node.get_logger().error(f"Sent follow lane command to {actor.actor_id}, but failed to get response after 10 attempts.")
 
 class FollowWaypoints(Action):
     def __init__(self, waypoints=None, waypoints_calculation_callback=None,
@@ -98,6 +137,7 @@ class FollowWaypoints(Action):
         is_acceleration_defined = self.acceleration is not None
 
         my_dict = {
+            "timestamp": client_node.get_clock().now().nanoseconds / 1e9,
             "target": actor.actor_id,
             "waypoints": waypoints,
             "speed": self.target_speed if is_speed_defined else 0,
@@ -108,7 +148,26 @@ class FollowWaypoints(Action):
         msg = std_msgs.msg.String()
         msg.data = json.dumps(my_dict)
         client_node.follow_waypoints_publisher.publish(msg)
-        client_node.get_logger().info(f"Sent follow waypoints command to {actor.actor_id} successfully.")
+
+        # make sure the action was properly handled
+        req = DynamicControl.Request()
+        req.json_request = msg.data
+        retry = 0
+        while retry < 10:
+            future = client_node.follow_waypoints_client.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            response = future.result()
+
+            if response.status.success:
+                client_node.get_logger().info(f"Follow waypoints command sent to {actor.actor_id} was processed successfully.")
+                return
+            else:
+                # client_node.get_logger().warning(f"Follow waypoints command sent to {actor.actor_id} was not processed successfully. "
+                #                                  f"Retrying... ({retry + 1}/10)")
+                time.sleep(client_node.timestep)
+                retry += 1
+
+        client_node.get_logger().error(f"Sent follow waypoints command to {actor.actor_id}, but failed to get response after 10 attempts.")
 
 class SetTargetSpeed(Action):
     def __init__(self, target_speed, condition=None, acceleration=None):
@@ -121,6 +180,7 @@ class SetTargetSpeed(Action):
     def _do(self, actor:NPCVehicle, client_node, global_state):
         is_acceleration_defined = self.acceleration is not None
         my_dict = {
+            "timestamp": client_node.get_clock().now().nanoseconds / 1e9,
             "target": actor.actor_id,
             "speed": self.target_speed,
             "acceleration": math.fabs(self.acceleration) if is_acceleration_defined else 0,
@@ -129,7 +189,26 @@ class SetTargetSpeed(Action):
         msg = std_msgs.msg.String()
         msg.data = json.dumps(my_dict)
         client_node.set_target_speed_publisher.publish(msg)
-        client_node.get_logger().info(f"Sent set target speed to {actor.actor_id} successfully.")
+
+        # make sure the action was properly handled
+        req = DynamicControl.Request()
+        req.json_request = msg.data
+        retry = 0
+        while retry < 10:
+            future = client_node.set_target_speed_client.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            response = future.result()
+
+            if response.status.success:
+                client_node.get_logger().info(f"Set target speed command sent to {actor.actor_id} was processed successfully.")
+                return
+            else:
+                # client_node.get_logger().warning(f"Set target speed command sent to {actor.actor_id} was not processed successfully. "
+                #                                  f"Retrying... ({retry + 1}/10)")
+                time.sleep(client_node.timestep)
+                retry += 1
+        
+        client_node.get_logger().error(f"Sent set target speed command to {actor.actor_id}, but failed to get response after 10 attempts.")
 
 class ChangeLane(Action):
     def __init__(self, next_lane, lateral_velocity=1.0,
@@ -191,10 +270,30 @@ class ChangeLane(Action):
             waypoints += self.next_lane.way_points[next_wp_id:]
 
         my_dict = {
+            "timestamp": client_node.get_clock().now().nanoseconds / 1e9,
             "target": actor.actor_id,
             "waypoints": [utils.array_to_dict_pos(p) for p in waypoints]
         }
         msg = std_msgs.msg.String()
         msg.data = json.dumps(my_dict)
         client_node.follow_waypoints_publisher.publish(msg)
-        client_node.get_logger().info(f"Sent lane change command to {actor.actor_id}.")
+
+        # make sure the action was properly handled
+        req = DynamicControl.Request()
+        req.json_request = msg.data
+        retry = 0
+        while retry < 10:
+            future = client_node.follow_waypoints_client.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            response = future.result()
+
+            if response.status.success:
+                client_node.get_logger().info(f"Change lane command sent to {actor.actor_id} was processed successfully.")
+                return
+            else:
+                # client_node.get_logger().warning(f"Follow waypoints command sent to {actor.actor_id} was not processed successfully. "
+                #                                  f"Retrying... ({retry + 1}/10)")
+                time.sleep(client_node.timestep)
+                retry += 1
+
+        client_node.get_logger().error(f"Sent change lane command to {actor.actor_id}, but failed to get response after 10 attempts.")

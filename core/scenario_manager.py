@@ -6,9 +6,12 @@ from actions.npc_actions import *
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 
 class Scenario:
-    def __init__(self, network: Network, actors, client_node: ClientNode=None):
+    # fixed_delta_time can be adjusted depending on the PC performance
+    def __init__(self, network: Network, actors, client_node: ClientNode=None, fixed_delta_time=0.075):
         self.network = network
         self.client_node = client_node
+        self.fixed_delta_time = fixed_delta_time
+
         if self.client_node is not None:
             self.logger = client_node.get_logger()
 
@@ -34,18 +37,12 @@ class Scenario:
 
     def run(self):
         while self.running:
-            self.update_global_state()
             for actor in self.actors:
                 actor.tick(self.global_state, self.client_node)
 
-            if self.global_state["ads_internal_status"] == AdsInternalStatus.AUTONOMOUS_IN_PROGRESS.value:
-                self.running = False
-                self.subscribe_kinematics()
-                return
+            self.update_global_state()
 
-            # depending on the PC performance, this value can be decreased or
-            # it should be increased
-            time.sleep(0.1)
+            time.sleep(self.fixed_delta_time)
 
     def terminate(self):
         self.running = False
@@ -60,59 +57,19 @@ class Scenario:
             self.global_state["ads_internal_status"] = AdsInternalStatus.AUTONOMOUS_MODE_READY.value
 
         if ads_exec_state.motion_state == MOTION_STATE_MOVING and \
-            self.global_state["ads_internal_status"] == AdsInternalStatus.AUTONOMOUS_MODE_READY.value:
+                self.global_state["ads_internal_status"] == AdsInternalStatus.AUTONOMOUS_MODE_READY.value:
             self.global_state["ads_internal_status"] = AdsInternalStatus.AUTONOMOUS_IN_PROGRESS.value
+
+        if ads_exec_state.routing_state == ROUTING_STATE_ARRIVED and \
+                self.global_state["ads_internal_status"] == AdsInternalStatus.AUTONOMOUS_IN_PROGRESS.value:
+            self.logger.info("Goal arrived")
+            self.global_state["ads_internal_status"] = AdsInternalStatus.GOAL_ARRIVED.value
 
         kinematics_msg = self.client_node.query_groundtruth_kinematics()
         self.global_state["actor-kinematics"] = kinematic_msg_to_dict(kinematics_msg)
 
         gt_size_msg = self.client_node.query_groundtruth_size()
         self.global_state["actor-sizes"] = gt_size_msg_to_dict(gt_size_msg)
-
-    def subscribe_kinematics(self):
-        self.client_node.create_subscription(
-            aw_monitor.msg.GroundtruthKinematic,
-            '/simulation/gt/kinematic',
-            self.kinematics_callback,
-            QoSProfile(
-                reliability=ReliabilityPolicy.BEST_EFFORT,
-                history=HistoryPolicy.KEEP_LAST,
-                depth=10
-            )
-        )
-        self.client_node.create_subscription(
-            RouteState,
-            '/api/routing/state',
-            self.routing_state_callback,
-            QoSProfile(
-                reliability=ReliabilityPolicy.RELIABLE,
-                history=HistoryPolicy.KEEP_LAST,
-                depth=10,
-                durability=DurabilityPolicy.TRANSIENT_LOCAL
-            )
-        )
-        self.my_spin()
-
-    def kinematics_callback(self, msg):
-        if self.lock:
-            print(f"ignore kinematics {msg}")
-            return
-        self.lock = True
-        self.global_state["actor-kinematics"] = kinematic_msg_to_dict(msg)
-        for actor in self.actors:
-            actor.tick(self.global_state, self.client_node)
-        self.lock = False
-
-    def routing_state_callback(self, msg):
-        if msg.state == ROUTING_STATE_ARRIVED:
-            self.logger.info("Goal arrived")
-            self.global_state["ads_internal_status"] = AdsInternalStatus.GOAL_ARRIVED.value
-
-    def my_spin(self):
-        while self.global_state["ads_internal_status"] < AdsInternalStatus.GOAL_ARRIVED.value:
-            rclpy.spin_once(self.client_node)
-
-        self.logger.info("Scenario terminated")
 
 class ScenarioManager:
     def __init__(self, wait_writing_trace=False,):

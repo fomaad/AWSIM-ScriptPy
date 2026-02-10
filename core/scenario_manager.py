@@ -44,15 +44,23 @@ class Scenario:
                 actor.do_set_speed_limit(self.client_node)
 
             elif isinstance(actor, NPCVehicle):
-                actor.do_spawn(self.client_node, self.global_state)
+                if actor.spawn_condition is None:
+                    actor.do_spawn(self.client_node, self.global_state)
             
         while self.running:
+            self.update_global_state()
+            
             for actor in self.actors:
-                actor.tick(self.global_state, self.client_node)
+                # if the actor is an NPC and has not spawned, skip ticking
+                if not isinstance(actor, NPCVehicle) or actor.has_spawned:
+                    actor.tick(self.global_state, self.client_node)
+    
                 if isinstance(actor, EgoVehicle):
                     actor.do_set_speed_limit(self.client_node)
-
-            self.update_global_state()
+                elif isinstance(actor, NPCVehicle):
+                    if actor.spawn_condition is not None and not actor.has_spawned:
+                        if actor.spawn_condition(actor, self.global_state):
+                            actor.do_spawn(self.client_node, self.global_state)
 
             time.sleep(self.fixed_delta_time)
 

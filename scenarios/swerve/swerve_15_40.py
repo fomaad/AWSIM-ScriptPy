@@ -23,9 +23,9 @@ def make_scenarios(network):
                                  npc_init_laneoffset=LaneOffset('205', offset),
                                  _ego_speed=ve,
                                  _npc_speed=vo,
-                                 body_style=BodyStyle.SMALL_CAR,
+                                 body_style=BodyStyle.HATCHBACK,
                                  swerve_vy=vy,
-                                 dx0=dx0
+                                 dx0=dx0+0.2
                                 ))
     return scenarios
 

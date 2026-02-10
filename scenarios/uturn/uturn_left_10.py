@@ -27,7 +27,7 @@ def make_scenarios(network):
                                 uturn_next_lane='511',
                                 _ego_speed=ve / 3.6,
                                 _npc_speed=vo,
-                                dx0=dx0
+                                dx0=dx0+0.1
                                 ))
 
     return scenarios

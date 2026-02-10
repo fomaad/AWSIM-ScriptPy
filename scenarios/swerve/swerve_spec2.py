@@ -16,21 +16,17 @@ def make_swerve_scenario(network,
                          acceleration=8,
                          body_style=BodyStyle.HATCHBACK,
                          delay_time=0.03):
-    _, _, init_pos, init_orient = network.parse_lane_offset(ego_init_laneoffset)
-    _, _, goal_pos, goal_orient = network.parse_lane_offset(ego_goal_laneoffset)
 
     # ego specification
-    ego = EgoVehicle()
-    ego.add_action(SpawnEgo(position=init_pos, orientation=init_orient))
-    ego.add_action(SetGoalPose(position=goal_pos, orientation=goal_orient))
+    ego = EgoVehicle(init_pose=Pose.from_lane_offset(ego_init_laneoffset, network),
+                     goal_pose=Pose.from_lane_offset(ego_goal_laneoffset, network),
+                     speed_limit=ego_speed)
     ego.add_action(ActivateAutonomousMode(condition=autonomous_mode_ready()))
-    ego.add_action(SetVelocityLimit(ego_speed))
 
-    _, _, npc_init_pos, npc_init_orient = network.parse_lane_offset(npc_init_laneoffset)
+    _, _, npc_init_pos, _ = network.parse_lane_offset(npc_init_laneoffset)
     _id, source_lane, wp1, _ = network.parse_lane_offset(swerve_start_laneoffset)
 
-    npc1 = NPCVehicle("npc1", body_style)
-    npc_root_to_frontcenter = npc1.size[0]/2 + npc1.center[0]
+    npc_root_to_frontcenter = NPCVehicle.get_size(body_style)[0]/2 + NPCVehicle.get_center_offset(body_style)[0]
 
     # swerve specification
     # 1st step: compute the waypoints
@@ -61,7 +57,8 @@ def make_swerve_scenario(network,
     dis_threshold = dx0 + ego_travel_dis + npc_travel_dis
 
     # npc and follow waypoints (swerve waypoints) specification
-    npc1.add_action(SpawnNPCVehicle(position=npc_init_pos, orientation=npc_init_orient))
+    npc1 = NPCVehicle("npc1", body_style,
+                      init_pose=Pose.from_lane_offset(npc_init_laneoffset, network))
     npc1.add_action(FollowWaypoints(waypoints=[utils.array_to_dict_pos(p) for p in waypoints],
                                     target_speed=npc_speed,
                                     acceleration=acceleration,

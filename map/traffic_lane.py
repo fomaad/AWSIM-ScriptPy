@@ -80,6 +80,6 @@ class TrafficLane:
         if result is not None:
             return result, True
 
-        if np.linalg.norm(point2D - self.way_points[0]) < np.linalg.norm(point2D - self.way_points[-1]):
+        if np.linalg.norm(point2D - self.way_points[0][:2]) < np.linalg.norm(point2D - self.way_points[-1][:2]):
             return utils.project_point_to_segment_2d(point2D, self.way_points[0][:2], self.way_points[1][:2])
         return utils.project_point_to_segment_2d(point2D, self.way_points[-1][:2], self.way_points[-2][:2])

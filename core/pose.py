@@ -59,7 +59,7 @@ class Pose:
         :param network: Network object for parsing the lane offset
         :return: Pose instance
         """
-        _, _, position, quaternion = network.parse_lane_offset(lane_offset)
+        _, _, position, quaternion = network.parse_lane_offset(lane_offset, extend_following_lane=True)
         # Convert quaternion (which is from yaw in radians) to yaw in degrees
         yaw_rad = math.atan2(2 * (quaternion[3] * quaternion[2] + quaternion[0] * quaternion[1]),
                             1 - 2 * (quaternion[1] * quaternion[1] + quaternion[2] * quaternion[2]))
@@ -81,7 +81,27 @@ class Pose:
         return cls(position=position, orientation=quaternion, yaw=yaw_deg)
     
     @classmethod
-    def from_relative_to_lane(cls, reference_lane_offset, network, left=0, right=0, forward=0, backward=0, lane_width=3.5):
+    def from_left_lane(cls, reference_lane_offset, network, forward=0, backward=0, lane_width=3.5):
+        """
+        Create a Pose on the left lane relative to a reference LaneOffset.
+        
+        :param reference_lane_offset: LaneOffset object
+        :param network: Network object
+        :param forward: longitudinal distance forward
+        :param backward: longitudinal distance backward
+        :return: Pose instance
+        """
+        return cls.from_relative_to_lane(reference_lane_offset, network, left=lane_width, forward=forward, backward=backward)
+    
+    @classmethod
+    def from_right_lane(cls, reference_lane_offset, network, forward=0, backward=0, lane_width=3.5):
+        """
+        Create a Pose on the right lane relative to a reference LaneOffset.
+        """
+        return cls.from_relative_to_lane(reference_lane_offset, network, right=lane_width, forward=forward, backward=backward)
+
+    @classmethod
+    def from_relative_to_lane(cls, reference_lane_offset, network, left=0, right=0, forward=0, backward=0):
         """
         Create a Pose relative to a reference LaneOffset.
         
@@ -119,13 +139,7 @@ class Pose:
         offset_point_2d = ref_position[:2] + lateral_distance * np.array([perp_left_x, perp_left_y])
         
         # Find the lane that contains this offset point
-        target_lane = None
-        for lane in network.traffic_lanes:
-            proj_point, is_inside = lane.project_point2D_onto_lane(offset_point_2d)
-            if is_inside:
-                target_lane = lane
-                break
-        
+        target_lane = network.get_lane_from_point(offset_point_2d)
         if target_lane is None:
             raise ValueError(f"No lane found for lateral offset point {offset_point_2d}")
         

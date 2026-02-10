@@ -47,9 +47,9 @@ class Scenario:
                 if actor.spawn_condition is None:
                     actor.do_spawn(self.client_node, self.global_state)
             
+        self.update_global_state()
+
         while self.running:
-            self.update_global_state()
-            
             for actor in self.actors:
                 # if the actor is an NPC and has not spawned, skip ticking
                 if not isinstance(actor, NPCVehicle) or actor.has_spawned:
@@ -61,7 +61,9 @@ class Scenario:
                     if actor.spawn_condition is not None and not actor.has_spawned:
                         if actor.spawn_condition(actor, self.global_state):
                             actor.do_spawn(self.client_node, self.global_state)
-
+            
+            self.update_global_state()
+            
             time.sleep(self.fixed_delta_time)
 
     def update_global_state(self):

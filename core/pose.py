@@ -83,22 +83,32 @@ class Pose:
     @classmethod
     def from_left_lane(cls, reference_lane_offset, network, forward=0, backward=0, lane_width=3.5):
         """
-        Create a Pose on the left lane relative to a reference LaneOffset.
+        Create a Pose on the left adjacent lane of a reference LaneOffset.
         
         :param reference_lane_offset: LaneOffset object
         :param network: Network object
         :param forward: longitudinal distance forward
         :param backward: longitudinal distance backward
+        :param lane_width: width of the lane (default: 3.5 m)
         :return: Pose instance
         """
-        return cls.from_relative_to_lane(reference_lane_offset, network, left=lane_width, forward=forward, backward=backward)
+        return cls.from_relative_to_lane(reference_lane_offset, network, 
+                                         left=lane_width, forward=forward, backward=backward)
     
     @classmethod
     def from_right_lane(cls, reference_lane_offset, network, forward=0, backward=0, lane_width=3.5):
         """
-        Create a Pose on the right lane relative to a reference LaneOffset.
+        Create a Pose on the right adjacent lane of a reference LaneOffset.
+        
+        :param reference_lane_offset: LaneOffset object
+        :param network: Network object
+        :param forward: longitudinal distance forward
+        :param backward: longitudinal distance backward
+        :param lane_width: width of the lane (default: 3.5 m)
+        :return: Pose instance
         """
-        return cls.from_relative_to_lane(reference_lane_offset, network, right=lane_width, forward=forward, backward=backward)
+        return cls.from_relative_to_lane(reference_lane_offset, network, 
+                                         right=lane_width, forward=forward, backward=backward)
 
     @classmethod
     def from_relative_to_lane(cls, reference_lane_offset, network, left=0, right=0, forward=0, backward=0):
@@ -117,7 +127,6 @@ class Pose:
         :param right: lateral distance to the right (mutually exclusive with left)
         :param forward: longitudinal distance forward (mutually exclusive with backward)
         :param backward: longitudinal distance backward (mutually exclusive with forward)
-        :param lane_width: width of the lane
         :return: Pose instance
         """
         # Get reference position and its lane

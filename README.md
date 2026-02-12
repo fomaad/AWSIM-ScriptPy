@@ -22,18 +22,14 @@ from core.trigger_condition import *
 
 scenario_manager = ScenarioManager()
 network = scenario_manager.network
-_, _, init_pos, init_orient = network.parse_lane_offset(LaneOffset('111'))
-_, _, goal_pos, goal_orient = network.parse_lane_offset(LaneOffset('111', 130))
-ego = EgoVehicle()
-ego.add_action(SpawnEgo(position=init_pos, orientation=init_orient))
-ego.add_action(SetGoalPose(position=goal_pos, orientation=goal_orient))
+ego = EgoVehicle(init_pose=Pose.from_lane_offset(LaneOffset('111'), network),
+                 goal_pose=Pose.from_lane_offset(LaneOffset('111', 130), network),
+                 speed_limit=30/3.6)
 ego.add_action(ActivateAutonomousMode(condition=autonomous_mode_ready()))
-ego.add_action(SetVelocityLimit(30/3.6))
 
-_, source_lane, npc_init_pos, npc_init_orient = network.parse_lane_offset(LaneOffset('112', 80))
-npc1 = NPCVehicle("npc1", body_style=BodyStyle.HATCHBACK)
+npc1 = NPCVehicle("npc1", body_style=BodyStyle.HATCHBACK,
+                  init_pose=Pose.from_right_lane(LaneOffset('111', 80), network))
 next_lane = network.parse_lane('111')
-npc1.add_action(SpawnNPCVehicle(position=npc_init_pos, orientation=npc_init_orient))
 npc1.add_action(FollowLane(target_speed=10/3.6,
                            condition=av_speed >= 30/3.6-0.1))
 npc1.add_action(ChangeLane(next_lane=next_lane,
@@ -45,8 +41,9 @@ scenario_manager.run([scenario])
 
 There are two vehicles in this scenario: the ego vehicle and an NPC vehicle (`npc1`).
 Two lanes `111` and `112` are straight and parallel to each other, with `111` on the left of `112`.
-The ego vehicle spawns on lane `111` at offset `0m`, sets its goal at offset `130m` on the same lane, activates autonomous driving mode when ready, and sets its speed limit to `30 km/h` (thanks to the `parse_lane_offset` helper function).
-The NPC vehicle spawns on lane `112` at offset `70m`, but its motion is delayed.
+Initially, the ego vehicle is spawned at the starting point of lane `111` (offset `0m`), sets its goal at offset `130m` on the same lane, and sets its speed limit to `30 km/h`.
+The autonomous driving mode is activated when ready (i.e., after setting the initial pose and goal pose).
+The NPC vehicle is spawned on lane `112` at offset `80m`, but its motion is delayed.
 Once the ego vehicle's speed reaches `30 km/h`, the NPC vehicle starts to follow its current lane `112` at `10 km/h`.
 When the ego vehicle is within `15m` longitudinal distance to the NPC vehicle, the NPC vehicle changes to lane `111` with a lateral velocity of `1.0 m/s` (i.e., it cuts in front of the ego vehicle).
 Check the detailed explanation of predefined actions and conditions below for more details.
@@ -84,22 +81,60 @@ See [Predefined Actions](#predefined-actions) and [Predefined Conditions](#prede
 Again, we recommend using the Python interface for more flexibility and expressiveness.
 However, if you want to use the original `.script` files, please check [this file](Origin-AWSIM-Script.md).
 
-### Predefined Actions
-Some predefined actions for common tasks are available in [actions](actions) folder.
-#### Ego Vehicle Actions
-- `Spawning`: Spawn the ego vehicle at a specified position and orientation (precisely, reset initial pose), and perform ADS re-localization. Note that precise 3D coordinates can be obtained from a lane offset expression with our helper functions, like
+### Pose Construction and Positioning
+
+The `Pose` class provides flexible ways to construct poses for vehicle positioning. Here are the main factory methods:
+
+- **`Pose.from_lane_offset(lane_offset, network)`**: Create a pose directly from a lane offset. The vehicle will be positioned at the center of the specified lane.
   ```python
-  _, _, position, orientation = network.parse_lane_offset(LaneOffset('111', 10))
+  ego_pose = Pose.from_lane_offset(LaneOffset('111', 0), network)
+  goal_pose = Pose.from_lane_offset(LaneOffset('111', 130), network)
   ```
-- `SetGoalPose`: Set the goal pose for the ego vehicle at a specified position and orientation. A goal is required for Autoware to perform autonomous driving.
+
+- **`Pose.from_position_yaw(position, yaw_deg)`**: Create a pose from 3D coordinates and yaw angle (in degrees).
+  ```python
+  pose = Pose.from_position_yaw((10.5, 20.3, 0), 45.0)
+  ```
+
+- **`Pose.from_left_lane(reference_lane_offset, network, forward=0, backward=0, lane_width=3.5)`**: Create a pose on the left adjacent lane of a reference lane offset. The vehicle is positioned one lane width to the left (note the curve lanes).
+  ```python
+  pose = Pose.from_left_lane(LaneOffset('111', 50), network, forward=10)  # Left lane, 10m forward
+  ```
+
+- **`Pose.from_right_lane(reference_lane_offset, network, forward=0, backward=0, lane_width=3.5)`**: Create a pose on the right adjacent lane of a reference lane offset. The vehicle is positioned one lane width to the right (note the curve lanes).
+  ```python
+  pose = Pose.from_right_lane(LaneOffset('111', 50), network, backward=5)  # Right lane, 5m backward
+  ```
+
+- **`Pose.from_relative_to_pose(reference_pose, network=None, left=0, right=0, forward=0, backward=0)`**: Create a pose relative to another pose. Offsets are applied relative to the reference pose's forward vector.
+  ```python
+  new_pose = Pose.from_relative_to_pose(reference_pose, left=2, forward=5)
+  ```
+
+### Ego Specification and Its Predefined Actions
+
+The ego vehicle is specified with an initial pose, goal pose, and optionally speed limit in order to perform autonomous driving in Autoware.
+For initial and goal poses, we can use the `Pose` class methods described above to construct the desired poses. 
+The velocity limit is optional and can be set using the `speed_limit` argument.
+
+The following predefined actions for the ego vehicle are available:
 - `ActivateAutonomousMode`: Activate the autonomous driving mode in Autoware.
 This action should be specified with the condition that the autonomous driving mode is ready (at least after setting the initial pose and goal pose).
-- `SetVelocityLimit`: Set the speed limit for the ego vehicle. Note that the real speed at each moment depends on Autoware's planning and control modules.
+
 
 ![Alt text](assets/network.png "Intersection with lane IDs")
 
-#### Other Vehicle Actions
-- `SpawnNPCVehicle`: Spawn a non-player character (NPC) vehicle at a specified position and orientation.
+#### Other Vehicle Specification and Control Actions
+Each NPC vehicle is specified with a unique ID (in string), an initial pose, and body style.
+
+For body styles, you can choose from the predefined styles in the [`BodyStyle`](core/npc_vehicle.py) enum class:
+- TAXI
+- HATCHBACK
+- SMALL_CAR
+- VAN
+- TRUCK
+
+The following predefined actions for NPC vehicles are available:
 - `FollowLane`: Make the NPC vehicle follow the corresponding lane at the current position (without specifying the lane explicitly). 
   - If the lane later splits into multiple lanes (e.g., near an intersection), one next lane to follow is chosen randomly. For instance, in the figure above, if the NPC vehicle is on lane `124` and approaches the intersection, it may randomly choose to follow lane `441` or `442` or `335` (to turn right) once finishing lane `124`.
   - Instead of letting the NPC vehicle choose next lanes randomly like above, we can also explicitly specify the desired next lane to follow by passing `lane` parameter to the `FollowLane` action. For instance, the following specification makes the NPC vehicle follow lane `335` after finishing lane `124`:

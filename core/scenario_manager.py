@@ -2,13 +2,14 @@ from core.client_ros_node import *
 from core.action import *
 from core.ego_vehicle import *
 from core.npc_vehicle import *
+from core.npc_pedestrian import *
 from actions.ego_actions import *
 from actions.npc_actions import *
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 
 class Scenario:
     # fixed_delta_time can be adjusted depending on the PC performance
-    def __init__(self, network: Network, actors, client_node: ClientNode=None, fixed_delta_time=0.075):
+    def __init__(self, network: Network, actors, client_node: ClientNode=None, fixed_delta_time=0.175):
         self.network = network
         self.client_node = client_node
         self.fixed_delta_time = fixed_delta_time
@@ -29,6 +30,7 @@ class Scenario:
         self.global_state = {
             "ads_internal_status": AdsInternalStatus.UNINITIALIZED.value,
             "ego_motion_state": MOTION_STATE_STOPPED,
+            "sleep_begin_time": {},  # actor_id -> timestamp of when the actor started sleeping
         }
 
     def set_client(self, client_node):
@@ -43,7 +45,7 @@ class Scenario:
                 actor.do_set_goal(self.client_node)
                 actor.do_set_speed_limit(self.client_node)
 
-            elif isinstance(actor, NPCVehicle):
+            elif isinstance(actor, NPCVehicle) or isinstance(actor, NPCPedestrian):
                 if actor.spawn_condition is None:
                     actor.do_spawn(self.client_node, self.global_state)
             
@@ -52,12 +54,12 @@ class Scenario:
         while self.running:
             for actor in self.actors:
                 # if the actor is an NPC and has not spawned, skip ticking
-                if not isinstance(actor, NPCVehicle) or actor.has_spawned:
+                if isinstance(actor, EgoVehicle) or actor.has_spawned:
                     actor.tick(self.global_state, self.client_node)
-    
+
                 if isinstance(actor, EgoVehicle):
                     actor.do_set_speed_limit(self.client_node)
-                elif isinstance(actor, NPCVehicle):
+                elif isinstance(actor, NPCVehicle) or isinstance(actor, NPCPedestrian):
                     if actor.spawn_condition is not None and not actor.has_spawned:
                         if actor.spawn_condition(actor, self.global_state):
                             actor.do_spawn(self.client_node, self.global_state)
@@ -77,6 +79,7 @@ class Scenario:
 
         if ads_exec_state.motion_state == MOTION_STATE_MOVING and \
                 self.global_state["ads_internal_status"] == AdsInternalStatus.AUTONOMOUS_MODE_READY.value:
+            self.logger.info("Autonomous driving in progress.")
             self.global_state["ads_internal_status"] = AdsInternalStatus.AUTONOMOUS_IN_PROGRESS.value
 
         if ads_exec_state.routing_state == ROUTING_STATE_ARRIVED and \

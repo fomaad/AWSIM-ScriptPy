@@ -75,7 +75,7 @@ class Network:
                     wp_id = lane.parse_wp_segment(proj_point)
                     lane_elevation = lane.way_points[wp_id][2] if wp_id >= 0 else None
                     if lane_elevation is not None and abs(lane_elevation - point[2]) < 4.0:
-                        return lane
+                        return lane, proj_point, wp_id
                 else:
-                    return lane
-        return None
+                    return lane, proj_point, None
+        return None, None, None

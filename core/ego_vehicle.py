@@ -3,8 +3,10 @@ from core.actor import *
 import utils
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
-# from tier4_planning_msgs.msg import VelocityLimit
-from autoware_internal_planning_msgs.msg import VelocityLimit
+try:
+    from tier4_planning_msgs.msg import VelocityLimit
+except ImportError:
+    from autoware_internal_planning_msgs.msg import VelocityLimit
 
 class EgoVehicle(VehicleActor):
     def __init__(self, init_pose:Pose, goal_pose:Pose, 

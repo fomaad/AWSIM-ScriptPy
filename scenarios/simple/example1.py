@@ -1,6 +1,12 @@
 from core.scenario_manager import *
 from core.trigger_condition import *
 
+"""
+This scenario tests the basic NPC actions: FollowLane, ChangeLane, SetTargetSpeed. 
+The NPC starts in lane 123, follows the lane for a while, then changes to lane 124 
+when it reaches a certain point. 
+You can play with the parameters of the actions and conditions to see different behaviors.
+"""
 def make_scenario(network):
     npc1 = NPCVehicle("npc1", BodyStyle.SMALL_CAR,
                       init_pose=Pose.from_lane_offset(LaneOffset('123'), network))

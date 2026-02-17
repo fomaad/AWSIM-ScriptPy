@@ -12,16 +12,24 @@ class Actor:
         self.actions.append(action)
 
     def tick(self, global_state, client_node):
+        """
+        Execute the actor's actions in order. 
+        If an action returns False (not completed), skip the remaining actions until next tick.
+        @return: False if no actions were executed, True otherwise
+        """
         ids_to_remove = []
+        actions_executed = False
         for (i,action) in enumerate(self.actions):
             completed = action.execute(self, global_state, client_node)
             if not completed:
                 # skip the remaining actions until next tick
                 break
+            actions_executed = True
             if completed and action.one_shot:
                 ids_to_remove.insert(0, i)
 
         [self.actions.pop(i) for i in ids_to_remove]
+        return actions_executed
 
 class VehicleActor(Actor):
     def __init__(self, actor_id, init_pose:Pose, size=(5,2,1.4), center=(0.0,0.0,0.0)):
@@ -33,6 +41,8 @@ class VehicleActor(Actor):
         super().__init__(actor_id, init_pose)
         self.size = np.array(size)
         self.center = np.array(center)
+        self.max_speed = 60/3.6
+        self.max_acceleration = 9.8
 
     def get_front_center(self, position, heading_deg):
         """

@@ -64,7 +64,6 @@ class NPCVehicle(VehicleActor):
         msg = std_msgs.msg.String()
         msg.data = json.dumps(my_dict)
         client_node.dynamic_npc_spawning_publisher.publish(msg)
-        self.has_spawned = True
 
         # make sure the action was properly handled
         req = DynamicControl.Request()
@@ -77,12 +76,14 @@ class NPCVehicle(VehicleActor):
 
             if response.status.success:
                 client_node.get_logger().info(f"Spawned NPC vehicle {self.actor_id}")
+                self.has_spawned = True
                 return
             else:
                 # client_node.get_logger().warning(f"Spawning {self.actor_id} was not processed successfully. "
                 #                                  f"Retrying... ({retry + 1}/10)")
                 time.sleep(client_node.timestep)
                 retry += 1
+        self.has_spawned = True
         client_node.get_logger().error(f"Sent spawning {self.actor_id} command, but failed to get response after 10 attempts.")
 
     @staticmethod

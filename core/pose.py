@@ -148,7 +148,7 @@ class Pose:
         offset_point_2d = ref_position[:2] + lateral_distance * np.array([perp_left_x, perp_left_y])
         
         # Find the lane that contains this offset point
-        target_lane = network.get_lane_from_point(offset_point_2d)
+        target_lane, _, _ = network.get_lane_from_point(offset_point_2d)
         if target_lane is None:
             raise ValueError(f"No lane found for lateral offset point {offset_point_2d}")
         

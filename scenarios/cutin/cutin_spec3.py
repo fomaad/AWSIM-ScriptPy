@@ -33,18 +33,13 @@ def make_scenario(network,
                  acceleration=8,
                  body_style=BodyStyle.SMALL_CAR):
 
-    _, _, init_pos, init_orient = network.parse_lane_offset(ego_init_laneoffset)
-    _, _, goal_pos, goal_orient = network.parse_lane_offset(ego_goal_laneoffset)
-
     # ego specification
-    ego = EgoVehicle()
-    ego.add_action(SpawnEgo(position=init_pos, orientation=init_orient))
-    ego.add_action(SetGoalPose(position=goal_pos, orientation=goal_orient))
+    ego = EgoVehicle(init_pose=Pose.from_lane_offset(ego_init_laneoffset, network),
+                    goal_pose=Pose.from_lane_offset(ego_goal_laneoffset, network),
+                    speed_limit=ego_speed)
     ego.add_action(ActivateAutonomousMode(condition=autonomous_mode_ready()))
-    ego.add_action(SetVelocityLimit(ego_speed,one_shot=True))
 
-    _, source_lane, npc_init_pos, npc_init_orient = network.parse_lane_offset(npc_init_laneoffset)
-    npc1 = NPCVehicle("npc1", body_style)
+    _, source_lane, _, _ = network.parse_lane_offset(npc_init_laneoffset)
 
     # cutin specification
     next_lane = network.parse_lane(cutin_next_lane)
@@ -58,7 +53,8 @@ def make_scenario(network,
         return [utils.array_to_dict_pos(p) for p in waypoints]
 
     # npc and follow waypoints (cutin waypoints) specification
-    npc1.add_action(SpawnNPCVehicle(position=npc_init_pos, orientation=npc_init_orient))
+    npc1 = NPCVehicle("npc1", body_style,
+                      init_pose=Pose.from_lane_offset(npc_init_laneoffset, network))
     npc1.add_action(FollowLane(target_speed=npc_speed,
                                acceleration=acceleration,
                                condition=av_speed >= ego_speed - 1))

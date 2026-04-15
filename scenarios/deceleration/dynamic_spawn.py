@@ -7,20 +7,13 @@ def make_deceleration_scenario(network,
                      _speed,
                      body_style=BodyStyle.HATCHBACK):
 
-    _, _, init_pos, init_orient = network.parse_lane_offset(ego_init_laneoffset)
-    _, _, goal_pos, goal_orient = network.parse_lane_offset(ego_goal_laneoffset)
-
     # ego specification
-    ego = EgoVehicle()
-    ego.add_action(SpawnEgo(position=init_pos, orientation=init_orient))
-    ego.add_action(SetGoalPose(position=goal_pos, orientation=goal_orient))
+    ego = EgoVehicle(init_pose=Pose.from_lane_offset(ego_init_laneoffset, network),
+                     goal_pose=Pose.from_lane_offset(ego_goal_laneoffset, network),
+                     speed_limit=_speed)
     ego.add_action(ActivateAutonomousMode(condition=autonomous_mode_ready()))
-    ego.add_action(SetVelocityLimit(_speed,one_shot=True))
 
     # NPC specification
-    npc1 = NPCVehicle("npc1", body_style)
-    npc_root_to_back = npc1.size[0]/2 - npc1.center[0]
-
     # function to calculate the spawn pose of the NPC based on the AV's global state
     def pose_cal(actor, global_state):
         ego_kin = global_state['actor-kinematics']['ego']
@@ -28,13 +21,16 @@ def make_deceleration_scenario(network,
         ego_front_center = actor.get_front_center(ego_pos, ego_kin['pose']['rotation'][2])
         forward = (ego_front_center - ego_pos)[:2]
         forward = forward / np.linalg.norm(forward)
-        npc_pos = ego_front_center[:2] + (2 * _speed + npc_root_to_back) * forward
+        root_to_back = actor.size[0]/2 - actor.center[0]
+        npc_pos = ego_front_center[:2] + (2 * _speed + root_to_back) * forward
         orient = utils.quaternion_from_yaw(ego_kin['pose']['rotation'][2]/180*np.pi)
         return np.append(npc_pos, ego_front_center[2]), orient
 
     # dynamically spawn the NPC when AV speed >= _speed
-    npc1.add_action(SpawnNPCVehicle(pose_callback=pose_cal,
-                                    condition=av_speed >= _speed))
+    npc1 = NPCVehicle("npc1", body_style,
+                      pose_callback=pose_cal,
+                      spawn_condition=av_speed >= _speed)
+
     # Set the moving speed without acceleration step 
     npc1.add_action(FollowLane(target_speed=_speed,
                                acceleration=500))

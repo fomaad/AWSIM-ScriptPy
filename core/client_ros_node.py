@@ -11,7 +11,10 @@ from autoware_adapi_v1_msgs.srv import InitializeLocalization, ChangeOperationMo
 from autoware_adapi_v1_msgs.msg import RouteState
 from autoware_vehicle_msgs.msg import Engage
 import utils
-from tier4_planning_msgs.msg import VelocityLimit
+try:
+    from tier4_planning_msgs.msg import VelocityLimit
+except ImportError:
+    from autoware_internal_planning_msgs.msg import VelocityLimit
 from aw_monitor.srv import *
 import aw_monitor.msg
 
@@ -67,7 +70,7 @@ class AdsInternalStatus(Enum):
 class ClientNode(Node):
     def __init__(self):
         super().__init__('awsimscript_client')
-        self.timestep = 0.1
+        self.timestep = 0.02
         self.ads_internal_status = AdsInternalStatus.UNINITIALIZED
         self.ego_motion_state = MOTION_STATE_STOPPED
         self.published_finish_signal = False
@@ -75,7 +78,7 @@ class ClientNode(Node):
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
             history=HistoryPolicy.KEEP_LAST,
-            depth=10
+            depth=1
         )
         # publishers
         self.awsim_scenario_publisher = self.create_publisher(
@@ -98,7 +101,7 @@ class ClientNode(Node):
         # to despawn NPCs
         self.npc_removing_publisher = self.create_publisher(
             std_msgs.msg.String,
-            '/dynamic_control/vehicle/removing',
+            '/dynamic_control/npc/remove',
             qos_profile
         )
         # to publish signals when simulation starts, finishes
@@ -123,7 +126,7 @@ class ClientNode(Node):
             '/planning/scenario_planning/max_velocity',
             qos_profile
         )
-        # dynamically spawning NPCs
+        # dynamically spawning NPC vehicles
         self.dynamic_npc_spawning_publisher = self.create_publisher(
             std_msgs.msg.String,
             '/dynamic_control/vehicle/spawn',
@@ -148,6 +151,19 @@ class ClientNode(Node):
         self.set_target_speed_publisher = self.create_publisher(
             std_msgs.msg.String,
             '/dynamic_control/vehicle/target_speed',
+            qos_profile
+        )
+
+        # spawn NPC pedestrians
+        self.dynamic_pedestrian_spawning_publisher = self.create_publisher(
+            std_msgs.msg.String,
+            '/dynamic_control/pedestrian/spawn',
+            qos_profile
+        )
+        # pedestrian follow waypoints command
+        self.ped_follow_waypoints_publisher = self.create_publisher(
+            std_msgs.msg.String,
+            '/dynamic_control/pedestrian/follow_waypoints',
             qos_profile
         )
 
@@ -192,7 +208,7 @@ class ClientNode(Node):
         # to despawn NPCs
         self.npc_removing_client = self.create_client(
             DynamicControl,
-            '/dynamic_control/vehicle/removing_srv',
+            '/dynamic_control/npc/remove_srv',
         )
 
         self.map_network_client = self.create_client(
@@ -210,6 +226,19 @@ class ClientNode(Node):
         self.follow_waypoints_client = self.create_client(
             DynamicControl,
             '/dynamic_control/vehicle/follow_waypoints_srv',
+        )
+        self.set_target_speed_client = self.create_client(
+            DynamicControl,
+            '/dynamic_control/vehicle/target_speed_srv',
+        )
+        # pedestrians
+        self.dynamic_pedestrian_spawning_client = self.create_client(
+            DynamicControl,
+            '/dynamic_control/pedestrian/spawn_srv',
+        )
+        self.ped_follow_waypoints_client = self.create_client(
+            DynamicControl,
+            '/dynamic_control/pedestrian/follow_waypoints_srv',
         )
 
     def send_request(self, file_path):
@@ -361,7 +390,7 @@ class ClientNode(Node):
 
     def remove_npcs(self):
         my_dict = {
-            "target": "",
+            "target": "", #empty target means removing all NPC vehicles and pedestrians
         }
         msg = std_msgs.msg.String()
         msg.data = json.dumps(my_dict)

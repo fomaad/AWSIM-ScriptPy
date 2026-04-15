@@ -1,42 +1,10 @@
 from core.action import Action
 import std_msgs, rclpy
-import json, time
+import json, time, random
 import utils
-from core.actor import NPCVehicle
+from core.npc_vehicle import NPCVehicle
 from core.client_ros_node import *
-
-class SpawnNPCVehicle(Action):
-    def __init__(self, position=None, orientation=None,
-                 pose_callback=None, condition=None):
-        """
-        Either {position, orientation} or pose_callback must be defined.
-        :param position: np array
-        :param orientation: np array
-        :param pose_callback: function that takes (actor, global_state) and returns (position, orientation)
-        :return:
-        """
-        super().__init__(condition=condition, one_shot=True)
-        self.position = position
-        self.orientation = orientation
-        self.pose_callback = pose_callback
-
-    def _do(self, actor:NPCVehicle, client_node, global_state):
-        pos = self.position
-        orient = self.orientation
-        if self.pose_callback is not None:
-            pos, orient = self.pose_callback(actor, global_state)
-        my_dict = {
-            "name": actor.actor_id,
-            "body_style": actor.body_style.value,
-            "position": utils.array_to_dict_pos(pos),
-            "orientation": utils.array_to_dict_orient(orient)
-        }
-
-        msg = std_msgs.msg.String()
-        msg.data = json.dumps(my_dict)
-        client_node.dynamic_npc_spawning_publisher.publish(msg)
-
-        client_node.get_logger().info(f"Spawned NPC vehicle {actor.actor_id}")
+from core.pose import Pose as MyPose
 
 class FollowLane(Action):
     def __init__(self, lane=None, condition=None, target_speed=None, acceleration=None):
@@ -55,7 +23,9 @@ class FollowLane(Action):
     def _do(self, actor:NPCVehicle, client_node, global_state):
         is_speed_defined = self.target_speed is not None
         is_acceleration_defined = self.acceleration is not None
+        timestamp = client_node.get_clock().now().nanoseconds / 1e9
         my_dict = {
+            "timestamp": timestamp,
             "target": actor.actor_id,
             "lane": "" if self.lane is None else self.lane,
             "speed": self.target_speed if is_speed_defined else 0,
@@ -66,7 +36,26 @@ class FollowLane(Action):
         msg = std_msgs.msg.String()
         msg.data = json.dumps(my_dict)
         client_node.follow_lane_publisher.publish(msg)
-        client_node.get_logger().info(f"Sent follow lane command to {actor.actor_id} successfully.")
+
+        # make sure the action was properly handled
+        req = DynamicControl.Request()
+        req.json_request = msg.data
+        retry = 0
+        while retry < 10:
+            future = client_node.follow_lane_client.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            response = future.result()
+
+            if response.status.success:
+                # client_node.get_logger().info(f"Follow lane was sent to {actor.actor_id} and processed successfully.")
+                return
+            else:
+                # client_node.get_logger().warning(f"Follow lane command sent to {actor.actor_id} was not processed successfully. "
+                                                #  f"Retrying... ({retry + 1}/10)")
+                time.sleep(client_node.timestep)
+                retry += 1
+    
+        client_node.get_logger().error(f"Sent follow lane command to {actor.actor_id}, but failed to get response after 10 attempts.")
 
 class FollowWaypoints(Action):
     def __init__(self, waypoints=None, waypoints_calculation_callback=None,
@@ -98,6 +87,7 @@ class FollowWaypoints(Action):
         is_acceleration_defined = self.acceleration is not None
 
         my_dict = {
+            "timestamp": client_node.get_clock().now().nanoseconds / 1e9,
             "target": actor.actor_id,
             "waypoints": waypoints,
             "speed": self.target_speed if is_speed_defined else 0,
@@ -108,7 +98,26 @@ class FollowWaypoints(Action):
         msg = std_msgs.msg.String()
         msg.data = json.dumps(my_dict)
         client_node.follow_waypoints_publisher.publish(msg)
-        client_node.get_logger().info(f"Sent follow waypoints command to {actor.actor_id} successfully.")
+
+        # make sure the action was properly handled
+        req = DynamicControl.Request()
+        req.json_request = msg.data
+        retry = 0
+        while retry < 10:
+            future = client_node.follow_waypoints_client.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            response = future.result()
+
+            if response.status.success:
+                client_node.get_logger().info(f"Follow waypoints command sent to {actor.actor_id} was processed successfully.")
+                return
+            else:
+                # client_node.get_logger().warning(f"Follow waypoints command sent to {actor.actor_id} was not processed successfully. "
+                #                                  f"Retrying... ({retry + 1}/10)")
+                time.sleep(client_node.timestep)
+                retry += 1
+
+        client_node.get_logger().error(f"Sent follow waypoints command to {actor.actor_id}, but failed to get response after 10 attempts.")
 
 class SetTargetSpeed(Action):
     def __init__(self, target_speed, condition=None, acceleration=None):
@@ -117,10 +126,11 @@ class SetTargetSpeed(Action):
         # if acceleration is None, the default values will be used
         self.target_speed = target_speed
         self.acceleration = acceleration
-
+    
     def _do(self, actor:NPCVehicle, client_node, global_state):
         is_acceleration_defined = self.acceleration is not None
         my_dict = {
+            "timestamp": client_node.get_clock().now().nanoseconds / 1e9,
             "target": actor.actor_id,
             "speed": self.target_speed,
             "acceleration": math.fabs(self.acceleration) if is_acceleration_defined else 0,
@@ -129,7 +139,26 @@ class SetTargetSpeed(Action):
         msg = std_msgs.msg.String()
         msg.data = json.dumps(my_dict)
         client_node.set_target_speed_publisher.publish(msg)
-        client_node.get_logger().info(f"Sent set target speed to {actor.actor_id} successfully.")
+
+        # make sure the action was properly handled
+        req = DynamicControl.Request()
+        req.json_request = msg.data
+        retry = 0
+        while retry < 10:
+            future = client_node.set_target_speed_client.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            response = future.result()
+
+            if response.status.success:
+                client_node.get_logger().info(f"Set target speed command sent to {actor.actor_id} was processed successfully.")
+                return
+            else:
+                # client_node.get_logger().warning(f"Set target speed command sent to {actor.actor_id} was not processed successfully. "
+                #                                  f"Retrying... ({retry + 1}/10)")
+                time.sleep(client_node.timestep)
+                retry += 1
+        
+        client_node.get_logger().error(f"Sent set target speed command to {actor.actor_id}, but failed to get response after 10 attempts.")
 
 class ChangeLane(Action):
     def __init__(self, next_lane, lateral_velocity=1.0,
@@ -191,10 +220,205 @@ class ChangeLane(Action):
             waypoints += self.next_lane.way_points[next_wp_id:]
 
         my_dict = {
+            "timestamp": client_node.get_clock().now().nanoseconds / 1e9,
             "target": actor.actor_id,
             "waypoints": [utils.array_to_dict_pos(p) for p in waypoints]
         }
         msg = std_msgs.msg.String()
         msg.data = json.dumps(my_dict)
         client_node.follow_waypoints_publisher.publish(msg)
-        client_node.get_logger().info(f"Sent lane change command to {actor.actor_id}.")
+
+        # make sure the action was properly handled
+        req = DynamicControl.Request()
+        req.json_request = msg.data
+        retry = 0
+        while retry < 10:
+            future = client_node.follow_waypoints_client.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            response = future.result()
+
+            if response.status.success:
+                client_node.get_logger().info(f"Change lane command sent to {actor.actor_id} was processed successfully.")
+                return
+            else:
+                # client_node.get_logger().warning(f"Follow waypoints command sent to {actor.actor_id} was not processed successfully. "
+                #                                  f"Retrying... ({retry + 1}/10)")
+                time.sleep(client_node.timestep)
+                retry += 1
+
+        client_node.get_logger().error(f"Sent change lane command to {actor.actor_id}, but failed to get response after 10 attempts.")
+
+def pose_array_to_dict(input):
+    if isinstance(input, MyPose):
+        return utils.array_to_dict_pos(input.position)
+    else:
+        return utils.array_to_dict_pos(input)
+
+# for pedestrians
+class Walking(Action):
+    def __init__(self, waypoints, waypoints_calculation_callback=None,
+                 target_speed=1.5, condition=None):
+        """
+        Either waypoints or waypoints_calculation_callback must be defined.
+        """
+        super().__init__(condition=condition, one_shot=True)
+        self.waypoints = waypoints
+        self.waypoints_calculation_callback = waypoints_calculation_callback
+        self.target_speed = target_speed
+
+    def _do(self, actor:NPCVehicle, client_node, global_state):
+        waypoints = self.waypoints
+        if waypoints is None:
+            waypoints = self.waypoints_calculation_callback(actor, global_state)
+        is_speed_defined = self.target_speed is not None
+
+        my_dict = {
+            "timestamp": client_node.get_clock().now().nanoseconds / 1e9,
+            "target": actor.actor_id,
+            "waypoints": [pose_array_to_dict(p) for p in self.waypoints],
+            "speed": self.target_speed,
+            "is_speed_defined": is_speed_defined,
+            "is_acceleration_defined": False,
+        }
+        msg = std_msgs.msg.String()
+        msg.data = json.dumps(my_dict)
+        client_node.ped_follow_waypoints_publisher.publish(msg)
+
+        # make sure the action was properly handled
+        req = DynamicControl.Request()
+        req.json_request = msg.data
+        retry = 0
+        while retry < 10:
+            future = client_node.ped_follow_waypoints_client.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            response = future.result()
+
+            if response.status.success:
+                client_node.get_logger().info(f"Walking command sent to {actor.actor_id} was processed successfully.")
+                return
+            else:
+                # client_node.get_logger().warning(f"Walking command sent to {actor.actor_id} was not processed successfully. "
+                #                                  f"Retrying... ({retry + 1}/10)")
+                time.sleep(client_node.timestep)
+                retry += 1
+        
+        client_node.get_logger().error(f"Sent walking command to {actor.actor_id}, but failed to get response after 10 attempts.")
+
+class Sleep(Action):
+    def __init__(self, duration, condition=None):
+        super().__init__(condition=condition, one_shot=True)
+        self.duration = duration
+
+    def should_trigger(self, actor:NPCVehicle, global_state):
+        current_time = time.time()
+        sleep_begin = global_state['sleep_begin_time'].get(actor.actor_id)
+        if sleep_begin is None:
+            # start sleeping
+            global_state['sleep_begin_time'][actor.actor_id] = current_time
+            # print(f"NPC {actor.actor_id} starts sleeping for {self.duration} seconds.")
+            return False
+
+        elif current_time - sleep_begin >= self.duration:
+            # finish sleeping
+            global_state['sleep_begin_time'][actor.actor_id] = None
+            return True
+
+        return False
+
+    def _do(self, actor:NPCVehicle, client_node, global_state):
+        # do nothing, just wait until the duration has passed
+        pass
+
+## Actions for random behaviors
+class RandomAction(Action):
+    """
+    Randomly choose one of the following behaviors:
+    - Set a random target speed, with a random acceleration
+    - Change lane
+    """
+    def __init__(self, network, condition=None):
+        super().__init__(condition=condition, one_shot=True)
+        self.network = network
+
+    def random_speed_prof(self, actor:NPCVehicle, global_state):
+        target_speed = np.random.uniform(11.11, actor.max_speed)
+        acceleration = None
+        if global_state['actor-kinematics'] and\
+                global_state['actor-kinematics']['vehicles'].get(actor.actor_id):
+            npc = global_state['actor-kinematics']['vehicles'].get(actor.actor_id)
+            vel = np.array(npc['twist']['linear'])
+            current_speed = np.linalg.norm(vel)
+            if target_speed - current_speed > 0:
+                acceleration = np.random.uniform(0, actor.max_acceleration)
+            else:
+                acceleration = np.random.uniform(-actor.max_acceleration, 0)
+        return target_speed, acceleration
+    
+    def left_waypoint(self, current_pos, speed, current_lane_forward_vector, lane_width=3.3):
+        vy = np.random.uniform(1.0, min(1.6, speed - 0.5))
+        vx = np.sqrt(max(speed ** 2 - vy ** 2, 0))
+        shift_x = lane_width/vy * vx
+        return utils.point_forward(current_pos, current_lane_forward_vector, shift_x, -lane_width), vy
+
+    def right_waypoint(self, current_pos, speed, current_lane_forward_vector, lane_width=3.3):
+        vy = np.random.uniform(1.0, min(1.6, speed - 0.5))
+        vx = np.sqrt(max(speed ** 2 - vy ** 2, 0))
+        shift_x = lane_width/vy * vx
+        return utils.point_forward(current_pos, current_lane_forward_vector, shift_x, lane_width), vy
+
+    def _do(self, actor:NPCVehicle, client_node, global_state):
+        # Randomly choose a behavior
+        behavior = random.choice(["set_speed", "change_lane"])
+        if behavior == "set_speed":
+            # Set a random target speed
+            target_speed, acceleration = self.random_speed_prof(actor, global_state)
+            # client_node.get_logger().info(f"Randomly chosen behavior: set speed to {target_speed:.2f} m/s with acceleration {acceleration:.2f} m/s^2")
+            SetTargetSpeed(target_speed, acceleration=acceleration)._do(actor, client_node, global_state)
+
+        elif behavior == "change_lane":
+            # Change lane
+            if not global_state['actor-kinematics'] or\
+                not global_state['actor-kinematics']['vehicles'].get(actor.actor_id):
+                return
+            actor_state = global_state['actor-kinematics']['vehicles'].get(actor.actor_id)
+            pos = np.array(actor_state['pose']['position'])
+            vel = np.array(actor_state['twist']['linear'])
+            speed = np.linalg.norm(vel)
+            if speed < 1.5:
+                # client_node.get_logger().info(f"NPC {actor.actor_id} is almost stationary. Skip lane change.")
+                return
+            current_lane, projected_point, wp_id = self.network.get_lane_from_point(pos, distance_threshold=1.0)
+            if current_lane is None:
+                client_node.get_logger().error(f"NPC {actor.actor_id} is not on any lane. Cannot change lane.")
+                return
+            if current_lane.turn_direction == TurnDirection.LEFT or \
+               current_lane.turn_direction == TurnDirection.RIGHT:
+                # client_node.get_logger().info(f"NPC {actor.actor_id} is on an intersection lane. Skip lane change.")
+                return
+            
+            lane_forward_vector = np.array(current_lane.way_points[wp_id + 1][:2]) - np.array(current_lane.way_points[wp_id][:2])
+            lane_forward_vector = lane_forward_vector / np.linalg.norm(lane_forward_vector)
+            side = random.choice(["left", "right"])
+            chosen_side = side
+            if side == "left":
+                new_waypoint, vy = self.left_waypoint(pos[:2], speed, lane_forward_vector)
+            else:
+                new_waypoint, vy = self.right_waypoint(pos[:2], speed, lane_forward_vector)
+
+            # check if the new waypoint is on a lane
+            adj_lane, _, _ = self.network.get_lane_from_point(np.append(new_waypoint, pos[2]), distance_threshold=1.0)
+            if adj_lane is None:
+                if chosen_side == "left":
+                    new_waypoint, vy = self.right_waypoint(pos[:2], speed, lane_forward_vector)
+                    chosen_side = "right"
+                else:
+                    new_waypoint, vy = self.left_waypoint(pos[:2], speed, lane_forward_vector)
+                    chosen_side = "left"
+                adj_lane, _, _ = self.network.get_lane_from_point(np.append(new_waypoint, pos[2]), distance_threshold=1.0)
+                if adj_lane is None:
+                    client_node.get_logger().warning(f"Both left and right lane changes for NPC {actor.actor_id} are not feasible. Skip lane change.")
+                    return
+                
+            # waypoint is now valid
+            # client_node.get_logger().info(f"Randomly chosen behavior: change lane to the {chosen_side} with lateral velocity {vy:.2f} m/s")
+            ChangeLane(next_lane=adj_lane, lateral_velocity=vy)._do(actor, client_node, global_state)

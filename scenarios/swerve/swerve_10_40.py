@@ -8,7 +8,8 @@ def make_scenarios(network):
 
     # dynamic params
     vys = [1.0, 1.2, 1.4]
-    dx0s = [39, 34, 30]
+    # dx0s = [39, 34, 30]
+    dx0s = [44, 40, 38]
     offsets = [57, 62, 66]
 
     # scenarios
@@ -22,8 +23,9 @@ def make_scenarios(network):
                                  _ego_speed=ve,
                                  _npc_speed=vo,
                                  swerve_vy=vy,
-                                 body_style=BodyStyle.SMALL_CAR,
-                                 dx0=dx0
+                                 body_style=BodyStyle.HATCHBACK,
+                                 dx0=dx0+0.2,
+                                 swerve_dis=4.0,
                                 ))
     return scenarios
 

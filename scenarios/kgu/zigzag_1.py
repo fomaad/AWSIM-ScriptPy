@@ -1,3 +1,7 @@
+# 2025/11/21
+# modified from ziczac2.py 
+# the width of weaving is larger
+
 import copy
 
 from core.scenario_manager import *
@@ -16,15 +20,15 @@ def make_scenario(network,
 
     # ego specification
     ego = EgoVehicle(init_pose=Pose.from_lane_offset(ego_init_laneoffset, network),
-                    goal_pose=Pose.from_lane_offset(ego_goal_laneoffset, network),
-                    speed_limit=ego_speed)
+                     goal_pose=Pose.from_lane_offset(ego_goal_laneoffset, network),
+                     speed_limit=ego_speed)
     ego.add_action(ActivateAutonomousMode(condition=autonomous_mode_ready()))
 
     # NPC specification
     _, _, npc_init_pos, _ = network.parse_lane_offset(npc_init_laneoffset)
     _id, source_lane, wp1, _ = network.parse_lane_offset(start_laneoffset)
 
-    # zigzag specification
+    # ziczac waypoints
     waypoints = [npc_init_pos, wp1]
 
     direction = (source_lane.way_points[_id + 1] - wp1)[:2]
@@ -38,9 +42,11 @@ def make_scenario(network,
     right_point = wp2
     for i in range(1, 7):
         wp3 = right_point + direction_normalized * 2
-        wp4 = point_forward(wp3, direction_normalized, 6, -1.0)
-        wp5 = wp4 + direction_normalized * 2
-        wp6 = point_forward(wp5, direction_normalized, 6, 1.0)
+#        wp4 = point_forward(wp3, direction_normalized, 6, -1.0)  
+        wp4 = point_forward(wp3, direction_normalized, 6, -3.0)    # by KGU
+        wp5 = wp4 + direction_normalized * 2    
+#        wp6 = point_forward(wp5, direction_normalized, 6, 1.0)
+        wp6 = point_forward(wp5, direction_normalized, 6, 3.0)   # by KGU
         for p in [wp3, wp4, wp5, wp6]:
             waypoints.append(np.append(p, wp1[2]))
         right_point = copy.deepcopy(wp6)

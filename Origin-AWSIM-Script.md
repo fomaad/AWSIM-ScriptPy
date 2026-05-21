@@ -8,7 +8,7 @@ python script_file_manager.py <path-to-input-script-or-folder>
 
 See `python script_file_manager.py -h` for more details.
 If a folder is given, each script file inside will be processed one by one.
-If using with [AW-Runtime-Monitor](https://github.com/dtanony/AW-Runtime-Monitor/), a trace (text data and video) will be saved for each simulation (script file).
+If using with [AW-Runtime-Monitor](https://github.com/duongtd23/AW-Runtime-Monitor/), a trace (text data and video) will be saved for each simulation (script file).
 
 ### An Example of AWSIM-Script
 An example of the input accepted by the original AWSIM-Script is as follows:

@@ -173,6 +173,31 @@ def reach_point(point, network):
         return np.linalg.norm(temp) < 3.0 and np.dot(forward, temp) >= 0
     return _cond
 
+def heading_wrt_lane_gt(actor, network, threshold):
+    def _cond(self_actor, global_state):
+        npc = global_state['actor-kinematics']['vehicles'].get(actor.actor_id)
+        if not npc:
+            # print(f'[ERROR] NPC {actor.actor_id} not found')
+            return False
+        
+        npc_heading = npc['pose']['rotation'][2]
+
+        ego = global_state['actor-kinematics']['ego']
+        ego_pos = np.array(ego['pose']['position'])
+        lane, _, wp_id = network.get_lane_from_point(ego_pos)
+        if not lane:
+            print(f'Ego is not on any lane')
+            return False
+
+        lane_direction_vec = lane.way_points[wp_id + 1][:2] - lane.way_points[wp_id][:2]
+        lane_heading = np.arctan2(lane_direction_vec[1], lane_direction_vec[0]) * 180 / np.pi
+        # print(f"NPC {actor.actor_id} heading: {npc_heading}. Lane heading: {lane_heading}.")
+        heading_diff = lane_heading - npc_heading
+        # normalize the heading difference to be within [-180, 180]
+        heading_diff = np.abs((heading_diff + 180) % 360 - 180)
+        return heading_diff > threshold
+    return _cond
+
 distance_to_ego = Measurement(_distance_to_ego_value)
 longitudinal_distance_to_ego = Measurement(_longitudinal_distance_to_ego_value)
 actor_speed = Measurement(_speed_value)

@@ -4,9 +4,9 @@ import utils
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
 try:
-    from tier4_planning_msgs.msg import VelocityLimit
-except ImportError:
     from autoware_internal_planning_msgs.msg import VelocityLimit
+except ImportError:
+    from tier4_planning_msgs.msg import VelocityLimit
 
 class EgoVehicle(VehicleActor):
     def __init__(self, init_pose:Pose, goal_pose:Pose, 

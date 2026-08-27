@@ -1,4 +1,4 @@
-from geometry_msgs.msg import Pose, PoseWithCovariance
+from geometry_msgs.msg import Pose as RosPose, PoseWithCovariance
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
@@ -8,7 +8,7 @@ def dict_to_point_obj(input, _2D=False):
     return np.array([input['x'], input['y'], input['z']])
 
 def dict_to_ros_pose(input):
-    pose = Pose()
+    pose = RosPose()
     pose.position.x = input['position']['x']
     pose.position.y = input['position']['y']
     pose.position.z = input['position']['z']
@@ -24,7 +24,7 @@ def obj_to_ros_pose(position, orientation):
     :param orientation: np array
     :return:
     """
-    pose = Pose()
+    pose = RosPose()
     pose.position.x = float(position[0])
     pose.position.y = float(position[1])
     pose.position.z = float(position[2])

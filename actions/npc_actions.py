@@ -47,7 +47,7 @@ class FollowLane(Action):
             response = future.result()
 
             if response.status.success:
-                # client_node.get_logger().info(f"Follow lane was sent to {actor.actor_id} and processed successfully.")
+                client_node.get_logger().info(f"Follow lane was sent to {actor.actor_id} and processed successfully.")
                 return
             else:
                 # client_node.get_logger().warning(f"Follow lane command sent to {actor.actor_id} was not processed successfully. "

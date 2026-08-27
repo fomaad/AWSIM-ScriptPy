@@ -9,10 +9,12 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 
 class Scenario:
     # fixed_delta_time can be adjusted depending on the PC performance
-    def __init__(self, network: Network, actors, client_node: ClientNode=None, fixed_delta_time=0.175):
+    def __init__(self, network: Network, actors, client_node: ClientNode=None, fixed_delta_time=0.1,
+                 timeout=None):
         self.network = network
         self.client_node = client_node
         self.fixed_delta_time = fixed_delta_time
+        self.timeout = timeout
 
         if self.client_node is not None:
             self.logger = client_node.get_logger()
@@ -38,20 +40,28 @@ class Scenario:
         self.logger = client_node.get_logger()
 
     def run(self):
+        start_time = time.time()
+
         # initialize actors
         for actor in self.actors:
             if isinstance(actor, EgoVehicle):
                 actor.do_spawn(self.client_node)
+                self.client_node.process_callbacks()
                 actor.do_set_goal(self.client_node)
                 actor.do_set_speed_limit(self.client_node)
 
             elif isinstance(actor, NPCVehicle) or isinstance(actor, NPCPedestrian):
                 if actor.spawn_condition is None:
                     actor.do_spawn(self.client_node, self.global_state)
-            
+
+        # Process callbacks to get initial state
+        self.client_node.process_callbacks()
         self.update_global_state()
 
         while self.running:
+            # Process all pending ROS callbacks (subscriptions, service responses)
+            self.client_node.process_callbacks()
+
             for actor in self.actors:
                 # if the actor is an NPC and has not spawned, skip ticking
                 if isinstance(actor, EgoVehicle) or actor.has_spawned:
@@ -65,11 +75,20 @@ class Scenario:
                             actor.do_spawn(self.client_node, self.global_state)
             
             self.update_global_state()
-            
-            time.sleep(self.fixed_delta_time)
+
+            # check for timeout
+            if self.timeout is not None and time.time() - start_time > self.timeout:
+                self.logger.info("Scenario timeout reached. Removing NPCs")
+                self.client_node.remove_npcs()
+                self.timeout = None
 
     def update_global_state(self):
-        ads_exec_state = self.client_node.query_execution_state()
+        # Use cached state from subscriptions instead of service calls
+        ads_exec_state = self.client_node.get_execution_state()
+        if ads_exec_state is None:
+            # State not yet received, skip update
+            return
+        
         self.global_state["ego_motion_state"] = ads_exec_state.motion_state
         if ads_exec_state.is_autonomous_mode_available and \
                 ads_exec_state.routing_state == ROUTING_STATE_SET and \
@@ -88,11 +107,15 @@ class Scenario:
             self.global_state["ads_internal_status"] = AdsInternalStatus.GOAL_ARRIVED.value
             self.running = False
 
-        kinematics_msg = self.client_node.query_groundtruth_kinematics()
-        self.global_state["actor-kinematics"] = kinematic_msg_to_dict(kinematics_msg)
+        # Use cached kinematics from subscription
+        kinematics_msg = self.client_node.get_kinematics()
+        if kinematics_msg is not None:
+            self.global_state["actor-kinematics"] = kinematic_msg_to_dict(kinematics_msg)
 
-        gt_size_msg = self.client_node.query_groundtruth_size()
-        self.global_state["actor-sizes"] = gt_size_msg_to_dict(gt_size_msg)
+        # Use cached sizes from subscription
+        gt_size_msg = self.client_node.get_actor_sizes()
+        if gt_size_msg is not None:
+            self.global_state["actor-sizes"] = gt_size_msg_to_dict(gt_size_msg)
 
 class ScenarioManager:
     def __init__(self, wait_writing_trace=False,):
@@ -107,6 +130,8 @@ class ScenarioManager:
         if init_new:
             rclpy.init()
             self.client_node = ClientNode()
+            # Allow time for other subscribers to discover publishers of this client node
+            time.sleep(1)
 
     def run(self, scenarios):
         while scenarios:

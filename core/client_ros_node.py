@@ -12,10 +12,9 @@ from autoware_adapi_v1_msgs.msg import RouteState
 from autoware_vehicle_msgs.msg import Engage
 import utils
 try:
-    from tier4_planning_msgs.msg import VelocityLimit
-except ImportError:
     from autoware_internal_planning_msgs.msg import VelocityLimit
-from aw_monitor.srv import *
+except ImportError:
+    from tier4_planning_msgs.msg import VelocityLimit
 import aw_monitor.msg
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -70,7 +69,7 @@ class AdsInternalStatus(Enum):
 class ClientNode(Node):
     def __init__(self):
         super().__init__('awsimscript_client')
-        self.timestep = 0.02
+        self.timestep = 0.05
         self.ads_internal_status = AdsInternalStatus.UNINITIALIZED
         self.ego_motion_state = MOTION_STATE_STOPPED
         self.published_finish_signal = False
@@ -241,6 +240,59 @@ class ClientNode(Node):
             '/dynamic_control/pedestrian/follow_waypoints_srv',
         )
 
+                # Subscriptions for state updates (processed via spin_once)
+        self._execution_state = None
+        self._kinematics = None
+        self._actor_sizes = None
+
+        self.execution_state_sub = self.create_subscription(
+            aw_monitor.msg.ExecutionState,
+            '/simulation/gt/execution_state',
+            self._execution_state_callback,
+            10
+        )
+        
+        self.kinematics_sub = self.create_subscription(
+            aw_monitor.msg.GroundtruthKinematic,
+            '/simulation/gt/kinematic',
+            self._gtkinematic_callback,
+            10
+        )
+        
+        self.sizes_sub = self.create_subscription(
+            aw_monitor.msg.GroundtruthSize,
+            '/simulation/gt/size',
+            self._gtsize_callback,
+            10
+        )
+
+    def _execution_state_callback(self, msg):
+        self._execution_state = msg
+    
+    def _gtkinematic_callback(self, msg):
+        self._kinematics = msg
+
+    def _gtsize_callback(self, msg):
+        self._actor_sizes = msg
+
+    def get_execution_state(self):
+        return self._execution_state
+    
+    def get_kinematics(self):
+        return self._kinematics
+    
+    def get_actor_sizes(self):
+        return self._actor_sizes
+
+    def process_callbacks(self, timeout_sec=0.05):
+        """
+        Process all pending ROS callbacks (subscriptions, service responses).
+        Call this periodically to update subscription data.
+        """
+        start = time.time()
+        while time.time() - start < timeout_sec:
+            rclpy.spin_once(self, timeout_sec=0.01)
+
     def send_request(self, file_path):
         self.publish_start_signal()
 
@@ -408,7 +460,7 @@ class ClientNode(Node):
                 self.get_logger().info(f"NPCs removed.")
                 break
 
-            time.sleep(1)
+            time.sleep(self.timestep)
             retry += 1
 
         if retry >= 10:

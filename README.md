@@ -2,7 +2,7 @@
 
 This is the client library of AWSIM-ScriptPy, a flexible interface for scenario specification in the [AWSIM-Labs simulator](https://github.com/duongtd23/AWSIM-Labs) for the [Autoware](https://github.com/autowarefoundation/autoware) autonomous driving system (ADS).
 
-It also supports the [AWSIM simulator](https://github.com/fomaad/AWSIM); checkout the branch [awsim](https://github.com/fomaad/AWSIM/tree/awsim) for the usage with the AWSIM simulator (recommended since AWSIM-Labs was ended of support).
+It also supports the [AWSIM simulator](https://github.com/fomaad/AWSIM); checkout the branch [awsim](https://github.com/fomaad/AWSIM-ScriptPy/tree/awsim) for the usage with the AWSIM simulator (recommended since AWSIM-Labs was ended of support).
 
 The server interface is implemented in the extended [AWSIM-Labs](https://github.com/duongtd23/AWSIM-Labs) simulator.
 
@@ -30,7 +30,7 @@ ego = EgoVehicle(init_pose=Pose.from_lane_offset(LaneOffset('111'), network),
 ego.add_action(ActivateAutonomousMode(condition=autonomous_mode_ready()))
 
 npc1 = NPCVehicle("npc1", body_style=BodyStyle.HATCHBACK,
-                  init_pose=Pose.from_right_lane(LaneOffset('111', 80), network))
+                  init_pose=Pose.from_right_lane(LaneOffset('112', 80), network))
 next_lane = network.parse_lane('111')
 npc1.add_action(FollowLane(target_speed=10/3.6,
                            condition=av_speed >= 30/3.6-0.1))

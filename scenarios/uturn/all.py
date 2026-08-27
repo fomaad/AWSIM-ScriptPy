@@ -1,16 +1,63 @@
-import scenarios.uturn.uturn_left_10 as uturn_left_10
-import scenarios.uturn.uturn_left_15 as uturn_left_15
-import scenarios.uturn.uturn_right_10 as uturn_right_10
-import scenarios.uturn.uturn_right_15 as uturn_right_15
+from core.scenario_manager import *
+from scenarios.uturn.base import make_uturn_scenario
 
-from core.scenario_manager import ScenarioManager
+def make_scenarios_10(network):
+    vo = 10 / 3.6
+
+    ves = [30, 35, 40]
+    dx0s = [26, 30, 36]
+    ego_init_laneoffsets = [LaneOffset('132', 20),
+                            LaneOffset('132', 12),
+                            LaneOffset('303', 1)]
+    ego_goal_laneoffsets = [LaneOffset('3001057', 20),
+                            LaneOffset('3001057', 20),
+                            LaneOffset('134', 18)]
+
+    scenarios = []
+    for (ve, dx0, ego_init_laneoffset, ego_goal_laneoffset) in (
+            zip(ves, dx0s, ego_init_laneoffsets, ego_goal_laneoffsets)):
+        scenarios.append(
+            make_uturn_scenario(network,
+                                ego_init_laneoffset=ego_init_laneoffset,
+                                ego_goal_laneoffset=ego_goal_laneoffset,
+                                npc_init_laneoffset=LaneOffset('3001052', 30),
+                                uturn_next_lane='132',
+                                _ego_speed=ve / 3.6,
+                                _npc_speed=vo,
+                                dx0=dx0+0.2
+                                ))
+
+    return scenarios
+
+def make_scenarios_15(network):
+    vo = 15 / 3.6
+
+    ves = [30, 35, 40]
+    dx0s = [23, 27, 31]
+    ego_init_laneoffsets = [LaneOffset('132', 20),
+                            LaneOffset('132', 12),
+                            LaneOffset('303', 1)]
+    ego_goal_laneoffsets = [LaneOffset('3001057', 20),
+                            LaneOffset('3001057', 20),
+                            LaneOffset('134', 18)]
+
+    scenarios = []
+    for (ve, dx0, ego_init_laneoffset, ego_goal_laneoffset) in (
+            zip(ves, dx0s, ego_init_laneoffsets, ego_goal_laneoffsets)):
+        scenarios.append(
+            make_uturn_scenario(network,
+                                ego_init_laneoffset=ego_init_laneoffset,
+                                ego_goal_laneoffset=ego_goal_laneoffset,
+                                npc_init_laneoffset=LaneOffset('3001052', 30),
+                                uturn_next_lane='132',
+                                _ego_speed=ve / 3.6,
+                                _npc_speed=vo,
+                                dx0=dx0-1.8
+                                ))
+    return scenarios
 
 if __name__ == '__main__':
     scenario_manager = ScenarioManager()
-    scenarios = (
-        uturn_left_10.make_scenarios(scenario_manager.network) +
-        uturn_left_15.make_scenarios(scenario_manager.network) +
-        uturn_right_10.make_scenarios(scenario_manager.network) +
-        uturn_right_15.make_scenarios(scenario_manager.network)
-    )
+    scenarios = make_scenarios_10(scenario_manager.network) +\
+                make_scenarios_15(scenario_manager.network)
     scenario_manager.run(scenarios)

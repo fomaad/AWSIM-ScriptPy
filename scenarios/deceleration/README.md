@@ -18,7 +18,7 @@ Readers are referred to the JAMA standard (Section 2.3.3.1) for more details.
 
 ### Scenario Specification in AWSIM-ScriptPy
 
-We want to use AWSIM-ScriptPy to implement these deceleration scenarios from the JAMA standard, such that they can be simulated in the Autoware-AWSIM-Labs environment to check the performance of Autoware.
+We want to use AWSIM-ScriptPy to implement these deceleration scenarios from the JAMA standard, such that they can be simulated in the Autoware-AWSIM environment to check the performance of Autoware.
 
 #### A naive implementation
 A naive implementation (from [base.py](base.py)) would look like this:

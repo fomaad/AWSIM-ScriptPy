@@ -1,6 +1,6 @@
 from core.scenario_manager import *
 from core.trigger_condition import *
-from scenarios.utils import *
+from utils import *
 
 def make_swerve_scenario(network,
                          ego_init_laneoffset,

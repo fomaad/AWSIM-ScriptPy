@@ -4,6 +4,14 @@ Another specification for the cutin scenarios
 from core.trigger_condition import *
 from core.scenario_manager import *
 
+# for AWSIM
+EGO_LANE = '120'
+NPC_LANE = '121'
+
+# # for AWSIM-Labs
+# EGO_LANE = '111'
+# NPC_LANE = '112'
+
 def cutin_waypoints(wp1, npc_speed, cutin_vy, source_lane, current_wp_id, next_lane):
     proj, _ = next_lane.project_point2D_onto_lane(wp1[:2])
     lateral_dis = np.linalg.norm(proj - wp1[:2])
@@ -65,10 +73,10 @@ def make_scenario(network,
 if __name__ == '__main__':
     scenario_manager = ScenarioManager()
     scenario =  make_scenario(scenario_manager.network,
-                              ego_init_laneoffset=LaneOffset('111', 0),
-                              ego_goal_laneoffset=LaneOffset('111', 130),
-                              npc_init_laneoffset=LaneOffset('112', 70),
-                              cutin_next_lane='111',
+                              ego_init_laneoffset=LaneOffset(EGO_LANE, 0),
+                              ego_goal_laneoffset=LaneOffset(EGO_LANE, 130),
+                              npc_init_laneoffset=LaneOffset(NPC_LANE, 70),
+                              cutin_next_lane=EGO_LANE,
                               ego_speed=30/3.6,
                               npc_speed=10/3.6,
                               cutin_vy=1.2,

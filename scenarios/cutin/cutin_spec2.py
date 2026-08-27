@@ -4,6 +4,14 @@ Another specification for the cutin scenarios
 from core.scenario_manager import *
 from core.trigger_condition import *
 
+# for AWSIM
+EGO_LANE = '120'
+NPC_LANE = '121'
+
+# # for AWSIM-Labs
+# EGO_LANE = '111'
+# NPC_LANE = '112'
+
 def make_cutin_scenario(node, network,
                      ego_init_laneoffset,
                      ego_goal_laneoffset,
@@ -60,11 +68,11 @@ def make_cutin_scenario(node, network,
 if __name__ == '__main__':
     scenario_manager = ScenarioManager()
     scenario =  make_cutin_scenario(scenario_manager.client_node, scenario_manager.network,
-                                    ego_init_laneoffset=LaneOffset('111', 0),
-                                    ego_goal_laneoffset=LaneOffset('111', 130),
-                                    npc_init_laneoffset=LaneOffset('112', 88),
-                                    cutin_start_laneoffset=LaneOffset('112', 95),
-                                    cutin_next_lane='111',
+                                    ego_init_laneoffset=LaneOffset(EGO_LANE, 0),
+                                    ego_goal_laneoffset=LaneOffset(EGO_LANE, 130),
+                                    npc_init_laneoffset=LaneOffset(NPC_LANE, 88),
+                                    cutin_start_laneoffset=LaneOffset(NPC_LANE, 95),
+                                    cutin_next_lane=EGO_LANE,
                                     ego_speed=30 / 3.6,
                                     npc_speed=20 / 3.6,
                                     cutin_vy=1.2,

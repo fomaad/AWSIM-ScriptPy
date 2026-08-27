@@ -20,7 +20,7 @@ Note that a collision between the cut-out vehicle (green) and the stopping vehic
 
 ### Scenario Specification in AWSIM-ScriptPy
 
-We want to use AWSIM-ScriptPy to implement these JAMA's cut-out scenarios, such that they can be simulated in the Autoware-AWSIM-Labs environment to check the performance of Autoware.
+We want to use AWSIM-ScriptPy to implement these JAMA's cut-out scenarios, such that they can be simulated in the Autoware-AWSIM environment to check the performance of Autoware.
 
 #### A naive implementation
 A naive implementation (from [base.py](base.py)) would look like this:

@@ -19,7 +19,7 @@ Essentially, this is done by introducing a careful and excellent human driver mo
 Readers are referred to the JAMA standard (Section 2.3.3.1) for more details.
 
 ### Scenario Specification in AWSIM-ScriptPy
-Here, we provide AWSIM-ScriptPy implementations for several cut-in scenarios from the JAMA standard, and they can be simulated in the Autoware-AWSIM-Labs environment.
+Here, we provide AWSIM-ScriptPy implementations for several cut-in scenarios from the JAMA standard, and they can be simulated in the Autoware-AWSIM environment.
 The base implementation is in the [base.py](base.py) file, and specific parameter settings are in separate files such as [cutin_30_10.py](cutin_30_10.py).
 
 The following code snippet (from [base.py](base.py)) shows the main idea of how to implement the JAMA's cut-in maneuver in AWSIM-ScriptPy:
@@ -41,7 +41,7 @@ We argue that these cut-in scenarios can be easily specified in AWSIM-ScriptPy w
 ### Scenario Execution
 
 As described in the [main README](../../README.md), these scenarios can be executed as normal Python programs.
-The video below shows an example execution of a cut-in scenario in the AWSIM-Labs simulator.
+The video below shows an example execution of a cut-in scenario in the AWSIM simulator.
 The video was recorded from a camera mounted on the top of the ego vehicle (and the ego vehicle is controlled by Autoware).
 
 https://github.com/user-attachments/assets/a753aff0-4d94-4dc2-ad40-93fb25c0a6cc

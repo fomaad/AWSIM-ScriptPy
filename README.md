@@ -1,8 +1,10 @@
 ## AWSIM-ScriptPy - A Flexible Interface for Scenario Specification in AWSIM and Autoware
 
-This is the client library of AWSIM-ScriptPy, a flexible interface for scenario specification in the [AWSIM simulator](https://github.com/fomaad/AWSIM) for the [Autoware](https://github.com/autowarefoundation/autoware) autonomous driving system (ADS).
+*(Note that this is the branch for the AWSIM simulator)*
 
+This is the client library of AWSIM-ScriptPy, a flexible interface for scenario specification in the [AWSIM simulator](https://github.com/fomaad/AWSIM) for the [Autoware](https://github.com/autowarefoundation/autoware) autonomous driving system (ADS).
 The server interface is implemented in the extended [AWSIM](https://github.com/fomaad/AWSIM) simulator.
+(AWSIM-Labs is also supported; checkout the main branch.)
 
 You may also find the following interesting:
 - [AW-Runtime-Monitor](https://github.com/duongtd23/AW-Runtime-Monitor): A tool that can record and generate scenario execution traces for post-simulation analysis/verification.
@@ -22,14 +24,14 @@ from core.trigger_condition import *
 
 scenario_manager = ScenarioManager()
 network = scenario_manager.network
-ego = EgoVehicle(init_pose=Pose.from_lane_offset(LaneOffset('111'), network),
-                 goal_pose=Pose.from_lane_offset(LaneOffset('111', 130), network),
+ego = EgoVehicle(init_pose=Pose.from_lane_offset(LaneOffset('120'), network),
+                 goal_pose=Pose.from_lane_offset(LaneOffset('120', 130), network),
                  speed_limit=30/3.6)
 ego.add_action(ActivateAutonomousMode(condition=autonomous_mode_ready()))
 
 npc1 = NPCVehicle("npc1", body_style=BodyStyle.HATCHBACK,
-                  init_pose=Pose.from_right_lane(LaneOffset('111', 80), network))
-next_lane = network.parse_lane('111')
+                  init_pose=Pose.from_right_lane(LaneOffset('121', 80), network))
+next_lane = network.parse_lane('120')
 npc1.add_action(FollowLane(target_speed=10/3.6,
                            condition=av_speed >= 30/3.6-0.1))
 npc1.add_action(ChangeLane(next_lane=next_lane,
@@ -40,12 +42,12 @@ scenario_manager.run([scenario])
 ```
 
 There are two vehicles in this scenario: the ego vehicle and an NPC vehicle (`npc1`).
-Two lanes `111` and `112` are straight and parallel to each other, with `111` on the left of `112`.
-Initially, the ego vehicle is spawned at the starting point of lane `111` (offset `0m`), sets its goal at offset `130m` on the same lane, and sets its speed limit to `30 km/h`.
+Two lanes `120` and `121` are straight and parallel to each other, with `120` on the left of `121`.
+Initially, the ego vehicle is spawned at the starting point of lane `120` (offset `0m`), sets its goal at offset `130m` on the same lane, and sets its speed limit to `30 km/h`.
 The autonomous driving mode is activated when ready (i.e., after setting the initial pose and goal pose).
-The NPC vehicle is spawned on lane `112` at offset `80m`, but its motion is delayed.
-Once the ego vehicle's speed reaches `30 km/h`, the NPC vehicle starts to follow its current lane `112` at `10 km/h`.
-When the ego vehicle is within `15m` longitudinal distance to the NPC vehicle, the NPC vehicle changes to lane `111` with a lateral velocity of `1.0 m/s` (i.e., it cuts in front of the ego vehicle).
+The NPC vehicle is spawned on lane `121` at offset `80m`, but its motion is delayed.
+Once the ego vehicle's speed reaches `30 km/h`, the NPC vehicle starts to follow its current lane `121` at `10 km/h`.
+When the ego vehicle is within `15m` longitudinal distance to the NPC vehicle, the NPC vehicle changes to lane `120` with a lateral velocity of `1.0 m/s` (i.e., it cuts in front of the ego vehicle).
 Check the detailed explanation of predefined actions and conditions below for more details.
 
 To run this scenario, first launch the AWSIM simulator and Autoware.
@@ -87,8 +89,8 @@ The `Pose` class provides flexible ways to construct poses for vehicle positioni
 
 - **`Pose.from_lane_offset(lane_offset, network)`**: Create a pose directly from a lane offset. The vehicle will be positioned at the center of the specified lane.
   ```python
-  ego_pose = Pose.from_lane_offset(LaneOffset('111', 0), network)
-  goal_pose = Pose.from_lane_offset(LaneOffset('111', 130), network)
+  ego_pose = Pose.from_lane_offset(LaneOffset('120', 0), network)
+  goal_pose = Pose.from_lane_offset(LaneOffset('120', 130), network)
   ```
 
 - **`Pose.from_position_yaw(position, yaw_deg)`**: Create a pose from 3D coordinates and yaw angle (in degrees).
@@ -98,12 +100,12 @@ The `Pose` class provides flexible ways to construct poses for vehicle positioni
 
 - **`Pose.from_left_lane(reference_lane_offset, network, forward=0, backward=0, lane_width=3.5)`**: Create a pose on the left adjacent lane of a reference lane offset. The vehicle is positioned one lane width to the left (note the curve lanes).
   ```python
-  pose = Pose.from_left_lane(LaneOffset('111', 50), network, forward=10)  # Left lane, 10m forward
+  pose = Pose.from_left_lane(LaneOffset('120', 50), network, forward=10)  # Left lane, 10m forward
   ```
 
 - **`Pose.from_right_lane(reference_lane_offset, network, forward=0, backward=0, lane_width=3.5)`**: Create a pose on the right adjacent lane of a reference lane offset. The vehicle is positioned one lane width to the right (note the curve lanes).
   ```python
-  pose = Pose.from_right_lane(LaneOffset('111', 50), network, backward=5)  # Right lane, 5m backward
+  pose = Pose.from_right_lane(LaneOffset('121', 50), network, backward=5)  # Right lane, 5m backward
   ```
 
 - **`Pose.from_relative_to_pose(reference_pose, network=None, left=0, right=0, forward=0, backward=0)`**: Create a pose relative to another pose. Offsets are applied relative to the reference pose's forward vector.

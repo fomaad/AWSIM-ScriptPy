@@ -1,6 +1,14 @@
 from core.scenario_manager import *
 from core.trigger_condition import *
 
+# for AWSIM
+EGO_LANE = '120'
+NPC_LANE = '121'
+
+# # for AWSIM-Labs
+# EGO_LANE = '111'
+# NPC_LANE = '112'
+
 def make_deceleration_scenario(network,
                      ego_init_laneoffset,
                      ego_goal_laneoffset,
@@ -43,8 +51,8 @@ def make_deceleration_scenario(network,
 if __name__ == '__main__':
     scenario_manager = ScenarioManager()
     scenario =  make_deceleration_scenario(scenario_manager.network,
-                                    ego_init_laneoffset=LaneOffset('111', 0),
-                                    ego_goal_laneoffset=LaneOffset('111', 210),
+                                    ego_init_laneoffset=LaneOffset(EGO_LANE, 0),
+                                    ego_goal_laneoffset=LaneOffset(EGO_LANE, 210),
                                     _speed=30 / 3.6
                                     )
     scenario_manager.run([scenario])

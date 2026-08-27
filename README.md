@@ -1,8 +1,10 @@
-## AWSIM-ScriptPy - A Flexible Interface for Scenario Specification in AWSIM and Autoware
+## AWSIM-ScriptPy - A Flexible Interface for Scenario Specification in AWSIM/AWSIM-Labs and Autoware
 
-This is the client library of AWSIM-ScriptPy, a flexible interface for scenario specification in the [AWSIM simulator](https://github.com/fomaad/AWSIM) for the [Autoware](https://github.com/autowarefoundation/autoware) autonomous driving system (ADS).
+This is the client library of AWSIM-ScriptPy, a flexible interface for scenario specification in the [AWSIM-Labs simulator](https://github.com/duongtd23/AWSIM-Labs) for the [Autoware](https://github.com/autowarefoundation/autoware) autonomous driving system (ADS).
 
-The server interface is implemented in the extended [AWSIM](https://github.com/fomaad/AWSIM) simulator.
+It also supports the [AWSIM simulator](https://github.com/fomaad/AWSIM); checkout the branch [awsim](https://github.com/fomaad/AWSIM/tree/awsim) for the usage with the AWSIM simulator (recommended since AWSIM-Labs was ended of support).
+
+The server interface is implemented in the extended [AWSIM-Labs](https://github.com/duongtd23/AWSIM-Labs) simulator.
 
 You may also find the following interesting:
 - [AW-Runtime-Monitor](https://github.com/duongtd23/AW-Runtime-Monitor): A tool that can record and generate scenario execution traces for post-simulation analysis/verification.
@@ -48,8 +50,8 @@ Once the ego vehicle's speed reaches `30 km/h`, the NPC vehicle starts to follow
 When the ego vehicle is within `15m` longitudinal distance to the NPC vehicle, the NPC vehicle changes to lane `111` with a lateral velocity of `1.0 m/s` (i.e., it cuts in front of the ego vehicle).
 Check the detailed explanation of predefined actions and conditions below for more details.
 
-To run this scenario, first launch the AWSIM simulator and Autoware.
-An instruction to run AWSIM and Autoware is available in the [AWSIM repo](https://github.com/fomaad/AWSIM?tab=readme-ov-file#1-launch-awsim-and-autoware).
+To run this scenario, first launch the AWSIM-Labs simulator and Autoware.
+An instruction to run AWSIM-Labs and Autoware is available in the [AWSIM-Labs repo](https://github.com/duongtd23/AWSIM-Labs?tab=readme-ov-file#1-launch-awsim-labs-and-autoware).
 Note that Autoware is not needed if the ego actor does not appear in the scenario specification.
 
 After launching the two tools and they are properly connected, 

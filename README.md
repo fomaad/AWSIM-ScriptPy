@@ -1,5 +1,19 @@
 ## AWSIM-ScriptPy - A Flexible Interface for Scenario Specification in AWSIM/AWSIM-Labs and Autoware
 
+### Table of Contents
+- [Repository Overview](#repository-overview)
+- [Usage](#usage)
+  - [Using Python Interface](#using-python-interface)
+  - [Using .script Files](#using-script-files)
+- [Pose Construction and Positioning](#pose-construction-and-positioning)
+- [Vehicle Specification and Predefined Actions](#vehicle-specification-and-predefined-actions)
+  - [Ego Vehicle](#ego-vehicle)
+  - [Non-Ego Vehicles](#non-ego-vehicles)
+- [Predefined Conditions](#predefined-conditions)
+- [Defining New Actions and Conditions](#define-new-actions-and-conditions)
+- [More Example Scenarios](#more-example-scenarios)
+- [Papers](#papers)
+
 This is the client library of AWSIM-ScriptPy, a flexible interface for scenario specification in the [AWSIM-Labs simulator](https://github.com/duongtd23/AWSIM-Labs) for the [Autoware](https://github.com/autowarefoundation/autoware) autonomous driving system (ADS).
 
 It also supports the [AWSIM simulator](https://github.com/fomaad/AWSIM); checkout the branch [awsim](https://github.com/fomaad/AWSIM-ScriptPy/tree/awsim) for the usage with the AWSIM simulator (recommended since AWSIM-Labs was ended of support).
@@ -14,7 +28,7 @@ You may also find the following interesting:
 There are two possible ways to specify a scenario: using `.script` files (original AWSIM-Script) or using the Python interface.
 We recommend using the Python interface for more flexibility and expressiveness.
 
-#### Python Scenario Specification
+#### Using Python Interface
 Some example scenarios are available in [scenarios](scenarios) folder.
 Let's consider a cutin scenario, specified in [scenarios/cutin/example.py](scenarios/cutin/example.py) file:
 
@@ -113,7 +127,9 @@ The `Pose` class provides flexible ways to construct poses for vehicle positioni
   new_pose = Pose.from_relative_to_pose(reference_pose, left=2, forward=5)
   ```
 
-### Ego Specification and Its Predefined Actions
+### Vehicle Specification and Predefined Actions
+
+#### Ego Vehicle
 
 The ego vehicle is specified with an initial pose, goal pose, and optionally speed limit in order to perform autonomous driving in Autoware.
 For initial and goal poses, we can use the `Pose` class methods described above to construct the desired poses. 
@@ -126,7 +142,7 @@ This action should be specified with the condition that the autonomous driving m
 
 ![Alt text](assets/network.png "Intersection with lane IDs")
 
-#### Other Vehicle Specification and Control Actions
+### Non-Ego Vehicles
 Each NPC vehicle is specified with a unique ID (in string), an initial pose, and body style.
 
 For body styles, you can choose from the predefined styles in the [`BodyStyle`](core/npc_vehicle.py) enum class:
@@ -212,11 +228,41 @@ Some predefined conditions for action triggering are available in [core/trigger_
 - `actor_speed <comparison-operator> threshold`: Condition that checks the speed of the concern actor satisfies the given comparison with the specified threshold (in m/s).
 - `av_speed <comparison-operator> threshold`: Condition that checks the speed of the ego vehicle satisfies the given comparison with the specified threshold (in m/s).
 
-### Define New Actions and Conditions
+### Defining New Actions and Conditions
 You can define new actions by extending the `Action` class (defined in [core/action.py](core/action.py) file), and implementing the `_do(actor, global_state)` method.  This method is called when the action is triggered for the given `actor`, with the current `global_state`. See the existing actions in [actions](actions) folder for reference.
 
 Similarly, you can define new trigger conditions. If the condition involves numeric comparisons (like distance or speed comparisons), we recommend to use the predefined wrapper class `Measurement` (defined in [core/trigger_condition.py](core/trigger_condition.py) file) to implement the condition. See the existing conditions like `distance_to_ego` and `actor_speed` for reference.
 
 
-### Example Scenarios
+### More Example Scenarios
 In the [scenarios](scenarios) folder, you can find some example scenarios that demonstrate the expressiveness of AWSIM-ScriptPy.
+
+
+### Papers
+If you find this project useful, please cite our papers:
+- For the original AWSIM-Script:
+```
+@article{TranIEEETR2025,
+  author = {Tran, Duong Dinh and Tomita, Takashi and Aoki, Toshiaki},
+  title = {Safety Analysis of Autonomous Driving Systems: A Simulation-based Runtime Verification Approach},
+  journal = {{IEEE} Transactions on Reliability},
+  year = {2025},
+  volume = {74},
+  number = {4},
+  pages = {4574-4588},
+  doi = {10.1109/TR.2025.3561455},
+}
+```
+
+- For the extended AWSIM-ScriptPy (Python interface):
+```
+@inproceedings{TranCOMPSAC2026,
+  author = {Tran, Duong Dinh and Riviere, Peter and Tomita, Takashi and Aoki, Toshiaki},
+  title = {{From Simulation to Verification: A Flexible Interface for Scenario Description in Autoware Autonomous Driving Ecosystem}},
+  booktitle = {The 50th IEEE International Conference on Computers, Software, and Applications, COMPSAC 2026},
+  publisher = {{IEEE}},
+  year = {2026},
+  doi = {10.1109/COMPSAC69091.2026.00064},
+  pages = {436-445},
+}
+```

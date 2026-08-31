@@ -77,3 +77,18 @@ The last argument of the function `NPC` lets the vehicle delay its movement 1 se
 - Scenario creation: We can set the map, which is either "Shinjuku" or "ShinjukuNight".
 
 - Other options: a wide array of configuration options, such as, delay spawning/movement, acceleration, and deceleration, can be set for each NPC.
+
+### Paper
+If you are interested in using AWSIM-Script, please cite our paper:
+```
+@article{TranIEEETR2025,
+  author = {Tran, Duong Dinh and Tomita, Takashi and Aoki, Toshiaki},
+  title = {Safety Analysis of Autonomous Driving Systems: A Simulation-based Runtime Verification Approach},
+  journal = {{IEEE} Transactions on Reliability},
+  year = {2025},
+  volume = {74},
+  number = {4},
+  pages = {4574-4588},
+  doi = {10.1109/TR.2025.3561455},
+}
+```

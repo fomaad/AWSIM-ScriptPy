@@ -19,7 +19,9 @@ This is the client library of AWSIM-ScriptPy, a flexible interface for scenario 
 The server interface is implemented in the extended [AWSIM](https://github.com/fomaad/AWSIM) simulator.
 (AWSIM-Labs is also supported; checkout the `main` branch.)
 
-You may also find the following interesting:
+If you would like to have a ready-to-run Autoware+AWSIM environment to try out this scenario specification interface, please check out our provided Docker image with instructions here: https://github.com/fomaad/AWSIM#docker-image-with-awsim-and-autoware. This Docker image contains pre-installed Autoware and AWSIM simulator so that you can run the example scenarios in this repository without any additional installation.
+
+The following projects might interest you:
 - [AW-Runtime-Monitor](https://github.com/duongtd23/AW-Runtime-Monitor): A tool that can record and generate scenario execution traces for post-simulation analysis/verification.
 - [AW-CheckerPy](https://github.com/duongtd23/AW-CheckerPy): An LTL-based property checker for verifying desired properties in LTL formulas on the generated execution traces.
 

@@ -1,8 +1,7 @@
 ## AWSIM-ScriptPy - A Flexible Interface for Scenario Specification in AWSIM/AWSIM-Labs and Autoware
 
 ### Table of Contents
-- [Repository Overview](#repository-overview)
-- [Usage](#usage)
+- [Usage Overview](#usage-overview)
   - [Using Python Interface](#using-python-interface)
   - [Using .script Files](#using-script-files)
 - [Pose Construction and Positioning](#pose-construction-and-positioning)
@@ -24,7 +23,7 @@ You may also find the following interesting:
 - [AW-Runtime-Monitor](https://github.com/duongtd23/AW-Runtime-Monitor): A tool that can record and generate scenario execution traces for post-simulation analysis/verification.
 - [AW-CheckerPy](https://github.com/duongtd23/AW-CheckerPy): An LTL-based property checker for verifying desired properties in LTL formulas on the generated execution traces.
 
-### Usage
+### Usage Overview
 There are two possible ways to specify a scenario: using `.script` files (original AWSIM-Script) or using the Python interface.
 We recommend using the Python interface for more flexibility and expressiveness.
 

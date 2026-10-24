@@ -70,11 +70,9 @@ class NPCVehicle(VehicleActor):
         req.json_request = msg.data
         retry = 0
         while retry < 10:
-            future = client_node.dynamic_npc_spawning_client.call_async(req)
-            rclpy.spin_until_future_complete(client_node, future)
-            response = future.result()
+            response = client_node.call_service(client_node.dynamic_npc_spawning_client, req)
 
-            if response.status.success:
+            if response is not None and response.status.success:
                 client_node.get_logger().info(f"Spawned NPC vehicle {self.actor_id}")
                 self.has_spawned = True
                 return

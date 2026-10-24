@@ -46,7 +46,6 @@ class Scenario:
         for actor in self.actors:
             if isinstance(actor, EgoVehicle):
                 actor.do_spawn(self.client_node)
-                self.client_node.process_callbacks()
                 actor.do_set_goal(self.client_node)
                 actor.do_set_speed_limit(self.client_node)
 
@@ -54,13 +53,12 @@ class Scenario:
                 if actor.spawn_condition is None:
                     actor.do_spawn(self.client_node, self.global_state)
 
-        # Process callbacks to get initial state
-        self.client_node.process_callbacks()
+        # Wait for the initial state (received by the background executor)
+        self.client_node.wait_for_state()
         self.update_global_state()
 
         while self.running:
-            # Process all pending ROS callbacks (subscriptions, service responses)
-            self.client_node.process_callbacks()
+            time.sleep(self.client_node.timestep)
 
             for actor in self.actors:
                 # if the actor is an NPC and has not spawned, skip ticking
@@ -148,7 +146,7 @@ class ScenarioManager:
             # wait for trace writing completes
             while True:
                 res = self.client_node.query_recording_state()
-                if (res.state is not MonitorRecordingState.Response.WRITING_DATA and
+                if res is not None and (res.state is not MonitorRecordingState.Response.WRITING_DATA and
                         res.state is not MonitorRecordingState.Response.RECORDING):
                     break
                 time.sleep(1)

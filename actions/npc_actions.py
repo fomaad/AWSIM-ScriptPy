@@ -42,11 +42,9 @@ class FollowLane(Action):
         req.json_request = msg.data
         retry = 0
         while retry < 10:
-            future = client_node.follow_lane_client.call_async(req)
-            rclpy.spin_until_future_complete(client_node, future)
-            response = future.result()
+            response = client_node.call_service(client_node.follow_lane_client, req)
 
-            if response.status.success:
+            if response is not None and response.status.success:
                 client_node.get_logger().info(f"Follow lane was sent to {actor.actor_id} and processed successfully.")
                 return
             else:
@@ -104,11 +102,9 @@ class FollowWaypoints(Action):
         req.json_request = msg.data
         retry = 0
         while retry < 10:
-            future = client_node.follow_waypoints_client.call_async(req)
-            rclpy.spin_until_future_complete(client_node, future)
-            response = future.result()
+            response = client_node.call_service(client_node.follow_waypoints_client, req)
 
-            if response.status.success:
+            if response is not None and response.status.success:
                 client_node.get_logger().info(f"Follow waypoints command sent to {actor.actor_id} was processed successfully.")
                 return
             else:
@@ -145,11 +141,9 @@ class SetTargetSpeed(Action):
         req.json_request = msg.data
         retry = 0
         while retry < 10:
-            future = client_node.set_target_speed_client.call_async(req)
-            rclpy.spin_until_future_complete(client_node, future)
-            response = future.result()
+            response = client_node.call_service(client_node.set_target_speed_client, req)
 
-            if response.status.success:
+            if response is not None and response.status.success:
                 client_node.get_logger().info(f"Set target speed command sent to {actor.actor_id} was processed successfully.")
                 return
             else:
@@ -233,11 +227,9 @@ class ChangeLane(Action):
         req.json_request = msg.data
         retry = 0
         while retry < 10:
-            future = client_node.follow_waypoints_client.call_async(req)
-            rclpy.spin_until_future_complete(client_node, future)
-            response = future.result()
+            response = client_node.call_service(client_node.follow_waypoints_client, req)
 
-            if response.status.success:
+            if response is not None and response.status.success:
                 client_node.get_logger().info(f"Change lane command sent to {actor.actor_id} was processed successfully.")
                 return
             else:
@@ -289,11 +281,9 @@ class Walking(Action):
         req.json_request = msg.data
         retry = 0
         while retry < 10:
-            future = client_node.ped_follow_waypoints_client.call_async(req)
-            rclpy.spin_until_future_complete(client_node, future)
-            response = future.result()
+            response = client_node.call_service(client_node.ped_follow_waypoints_client, req)
 
-            if response.status.success:
+            if response is not None and response.status.success:
                 client_node.get_logger().info(f"Walking command sent to {actor.actor_id} was processed successfully.")
                 return
             else:
